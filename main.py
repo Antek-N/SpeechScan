@@ -29,7 +29,7 @@ class App:
         widgets.addWidget(start_window)
         widgets.addWidget(file_window)
         widgets.addWidget(youtube_window)
-
+        widgets.setFixedSize(400, 500)
         # Show the stacked widget
         widgets.show()
         # Exits the application at the end of the Qt event loop
