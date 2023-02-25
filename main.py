@@ -1,4 +1,5 @@
 import sys
+from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
 import modules.file_window
@@ -19,6 +20,10 @@ class App:
         app = QApplication(sys.argv)
         # Create stacked widget
         widgets = QtWidgets.QStackedWidget()
+
+        # Set program title and icon
+        app.setApplicationName("SpeechScan")
+        app.setWindowIcon(QIcon('img/icon.png'))
 
         # Create windows
         start_window = modules.start_window.StartWindow(widgets)
