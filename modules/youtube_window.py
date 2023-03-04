@@ -47,6 +47,8 @@ class YouTubeWindow(QDialog):
         :param: None
         :return: None if no error occurs, 0 otherwise
         """
+        self.reset_window_to_default()
+
         yt_url = self.yt_url_field.text()
 
         if not self.is_url_valid(yt_url):
@@ -69,6 +71,17 @@ class YouTubeWindow(QDialog):
         except Exception as ex:
             logging.warning(ex)
             print(ex)
+
+    def reset_window_to_default(self) -> None:
+        """
+        Clears the words table widget to remove any previous results.
+
+        :param: None
+        :return: None
+        """
+        self.words_table_widget.clear()
+        self.words_table_widget.setRowCount(0)
+        self.words_table_widget.setColumnCount(0)
 
     @staticmethod
     def is_url_valid(yt_url: str) -> bool:
