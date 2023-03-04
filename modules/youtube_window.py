@@ -16,18 +16,19 @@ class YouTubeWindow(QDialog):
     """YouTubeWindow is a class that loads GUI, downloads audio from YouTube, counts the words in it and displays it.
 
     YouTubeWindow class performs the following tasks:
-    -Loading YouTubeWindow GUI
+    -loading YouTubeWindow GUI
     -checking the URL validity
     -checking if the video exists
     -setting the video title and thumbnail
-    -downloading the audio and send it to count word occurrences,
+    -downloading the audio and send it to count word occurrences
     -displaying the results of count.
     """
     def __init__(self, widgets):
         """
         Initialize the YoutubeWindow and load user interface.
 
-        :param widgets: the widgets in the window.
+        :param widgets: stacked program widgets.
+        return: None
         """
         super().__init__()
         # Load user interface
@@ -44,7 +45,7 @@ class YouTubeWindow(QDialog):
         on the screen. Finally, removes the temporary file containing the audio.
 
         :param: None
-        :return: None
+        :return: None if no error occurs, 0 otherwise
         """
         yt_url = self.yt_url_field.text()
 
@@ -66,6 +67,7 @@ class YouTubeWindow(QDialog):
             # Remove downloaded file
             os.remove(audio_path)
         except Exception as ex:
+            logging.warning(ex)
             print(ex)
 
     @staticmethod
@@ -153,7 +155,8 @@ class YouTubeWindow(QDialog):
 
     def set_table(self, counted_words_list: list) -> None:
         """
-        Sets in a table widget (set_table_and_display_word_counts sub-method).
+        Sets the number of columns and rows in the table, sets column headers, and makes the table elements
+        uneditable (set_table_and_display_counted_words sub-method).
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         :return: None
@@ -179,6 +182,6 @@ class YouTubeWindow(QDialog):
             message = "File transcription problem encountered"
         else:
             message = "Unknown problem encountered"
-        self.yt_title_field.setStyleSheet("color: rgb(200, 0, 0);")
-        self.yt_title_field.setText("Title:  " + message)
-        self.icon_field.clear()
+        self.yt_title_widget.setStyleSheet("color: rgb(200, 0, 0);")
+        self.yt_title_widget.setText("Title:  " + message)
+        self.icon_widget.clear()
