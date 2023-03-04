@@ -58,11 +58,7 @@ class FileWindow(QDialog):
         :param: None
         :return: None if no error occurs, 0 otherwise
         """
-        # Reset the error widget by setting its style sheet and text to default values
-        self.error_widget.setStyleSheet("color: rgb(0, 0, 0);")
-        self.error_widget.setText("==============")
-        # Clear the words table widget to remove any previous results
-        self.words_table_widget.clear()
+        self.reset_window_to_default()
 
         file_path = self.file_path_field.text()
 
@@ -89,6 +85,21 @@ class FileWindow(QDialog):
                 self.set_table_and_display_counted_words(counted_words_list)
         except Exception as ex:
             logging.warning(ex)
+
+    def reset_window_to_default(self) -> None:
+        """
+        Clears the words table widget to remove any previous results and reset error text to default.
+
+        :param: None
+        :return: None
+        """
+        # Reset the error widget by setting its style sheet and text to default values
+        self.error_widget.setStyleSheet("color: rgb(0, 0, 0);")
+        self.error_widget.setText("==============")
+        # Clear the words table widget to remove any previous results
+        self.words_table_widget.clear()
+        self.words_table_widget.setRowCount(0)
+        self.words_table_widget.setColumnCount(0)
 
     @staticmethod
     def check_file_existence(file_path) -> bool:
