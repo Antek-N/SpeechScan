@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap
 from pytube import YouTube
-import modules.count_words
+import modules.count_words_thread
 
 
 class YouTubeWindow(QDialog):
@@ -20,7 +20,8 @@ class YouTubeWindow(QDialog):
     -checking the URL validity
     -checking if the video exists
     -setting the video title and thumbnail
-    -downloading the audio and send it to count word occurrences
+    -downloading the audio
+    -send audio file to count word occurrences in new thread
     -displaying the results of count.
     """
     def __init__(self, widgets):
@@ -36,13 +37,16 @@ class YouTubeWindow(QDialog):
         self.count_button.clicked.connect(self.submit)
         # Return to the start_window after clicking the Cancel button
         self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
+        self.file_path = ""
+        self.count_thread = None
 
     def submit(self) -> Union[None, int]:
         """
         Retrieves the URL of the YouTube video. If the URL is valid, sets the video title and thumbnail,
         downloads the audio from the YouTube video, and sends it to the count_words function in the count_words.py
-        to count word occurrences and after that display the results (words with number of occurrences)
-        on the screen. Finally, removes the temporary file containing the audio.
+        to count word occurrences in new thread (by using count.words_thread.py) and after that display the
+        results (words with number of occurrences) on the screen. Finally, removes the temporary file containing
+        the audio (in handle_finished_counting_words method).
 
         :param: None
         :return: None if no error occurs, 0 otherwise
@@ -59,15 +63,9 @@ class YouTubeWindow(QDialog):
             # If the URL is valid and the video exist:
             self.set_video_title(yt_url)
             self.set_video_thumbnail(yt_url)
-            audio_path = self.download_video_as_mp3(yt_url)
+            self.file_path = self.download_video_as_mp3(yt_url)
             api_key = self.api_key_field.text()
-            counted_words_list = modules.count_words.CountWords(audio_path, api_key).count_words()
-            if counted_words_list in ["invalid api key", "file transcription error"]:
-                self.display_error_message(counted_words_list)
-            else:
-                self.set_table_and_display_counted_words(counted_words_list)
-            # Remove downloaded file
-            os.remove(audio_path)
+            self.start_words_counting_in_new_thread(api_key, self.file_path)
         except Exception as ex:
             logging.warning(ex)
             print(ex)
@@ -151,6 +149,38 @@ class YouTubeWindow(QDialog):
         video.download(filename=temp_file.name)
         file_path = temp_file.name
         return file_path
+
+    def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
+        """
+        Starts a new thread for counting the words in the given file (temporary file with audio of YouTube video).
+
+        :param api_key: the API key for AssemblyAI
+        :param file_path: the path to the audio file
+        :return: None
+        """
+        self.count_thread = modules.count_words_thread.CountWordsThread(file_path, api_key)
+        self.count_thread.finished.connect(self.handle_finished_counting_words)
+        self.count_thread.start()
+
+    def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> None:
+        """
+        Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
+        If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
+        with the counted words list and displays it on the screen. Finally, removes the temporary file containing
+        the audio.
+
+        :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
+         or message with error (str)
+        :return: None
+        """
+        if counted_words_list in ["invalid api key", "file transcription error"]:
+            # Display the error message if API key or file transcription is invalid
+            self.display_error_message(counted_words_list)
+        else:
+            # Else set table and display counted words list
+            self.set_table_and_display_counted_words(counted_words_list)
+        # Remove downloaded file
+        os.remove(self.file_path)
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """

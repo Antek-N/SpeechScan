@@ -4,7 +4,7 @@ from typing import Union
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView, QFileDialog
 from PyQt5.uic import loadUi
-import modules.count_words
+import modules.count_words_thread
 
 
 class FileWindow(QDialog):
@@ -15,7 +15,7 @@ class FileWindow(QDialog):
         -retrieving file path from user
         -checking if the file exist
         -checking if the file is in MP3 format
-        -send audio file to count word occurrences
+        -send audio file to count word occurrences in new thread
         -displaying the results of count.
     """
     def __init__(self, widgets) -> None:
@@ -32,6 +32,7 @@ class FileWindow(QDialog):
         self.count_button.clicked.connect(self.submit)
         # Return to the start_window after clicking the Cancel button
         self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
+        self.count_thread = None
 
     def choose_file(self) -> None:
         """
@@ -52,8 +53,8 @@ class FileWindow(QDialog):
     def submit(self) -> Union[None, int]:
         """
         Retrieves the chosen file and sends it to the count_words function in the count_words.py
-        to count word occurrences and after that display the results (words with number of occurrences)
-        on the screen.
+        to count word occurrences in new thread (by using count.words_thread.py) and after that display the
+        results (words with number of occurrences) on the screen.
 
         :param: None
         :return: None if no error occurs, 0 otherwise
@@ -75,14 +76,8 @@ class FileWindow(QDialog):
         try:
             # Retrieve the API key from the text field and count the words using count_words.py
             api_key = self.api_key_field.text()
-            counted_words_list = modules.count_words.CountWords(file_path, api_key).count_words()
+            self.start_words_counting_in_new_thread(api_key, file_path)
 
-            if counted_words_list in ["invalid api key", "file transcription error"]:
-                # Display the error message if API key or file transcription is invalid
-                self.display_error_message(counted_words_list)
-            else:
-                # Else set table and display counted words list
-                self.set_table_and_display_counted_words(counted_words_list)
         except Exception as ex:
             logging.warning(ex)
 
@@ -127,6 +122,35 @@ class FileWindow(QDialog):
             return True
         else:
             return False
+
+    def start_words_counting_in_new_thread(self, api_key, file_path):
+        """
+        Starts a new thread for counting the words in the given file.
+
+        :param api_key: the API key for AssemblyAI
+        :param file_path: the path to the audio file
+        :return: None
+        """
+        self.count_thread = modules.count_words_thread.CountWordsThread(file_path, api_key)
+        self.count_thread.finished.connect(self.handle_finished_counting_words)
+        self.count_thread.start()
+
+    def handle_finished_counting_words(self, counted_words_list):
+        """
+        Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
+        If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
+        with the counted words list and displays it on the screen.
+
+        :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
+        or message with error (str)
+        :return: None
+        """
+        if counted_words_list in ["invalid api key", "file transcription error"]:
+            # Display the error message if API key or file transcription is invalid
+            self.display_error_message(counted_words_list)
+        else:
+            # Else set table and display counted words list
+            self.set_table_and_display_counted_words(counted_words_list)
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """
