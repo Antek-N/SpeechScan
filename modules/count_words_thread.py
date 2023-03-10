@@ -7,7 +7,7 @@ class CountWordsThread(QThread):
 
     finished = pyqtSignal(object)  # A signal emitted when the thread has finished
 
-    def __init__(self, file_path, api_key):
+    def __init__(self, file_path: str, api_key: str) -> None:
         """
         Initializes the CountWordsThread object.
 
@@ -19,7 +19,7 @@ class CountWordsThread(QThread):
         self.file_path = file_path
         self.api_key = api_key
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the thread which counts the words in the .mp3 file using the CountWords class from the
         count_words module, emits the finished signal with the counted words list or error message as

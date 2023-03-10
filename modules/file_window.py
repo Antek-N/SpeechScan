@@ -97,7 +97,7 @@ class FileWindow(QDialog):
         self.words_table_widget.setColumnCount(0)
 
     @staticmethod
-    def check_file_existence(file_path) -> bool:
+    def check_file_existence(file_path: str) -> bool:
         """
         Checks if a file exists.
 
@@ -110,7 +110,7 @@ class FileWindow(QDialog):
             return False
 
     @staticmethod
-    def check_if_file_is_mp3(file_path) -> bool:
+    def check_if_file_is_mp3(file_path: str) -> bool:
         """
         Checks if a file is in MP3 format.
 
@@ -123,7 +123,7 @@ class FileWindow(QDialog):
         else:
             return False
 
-    def start_words_counting_in_new_thread(self, api_key, file_path):
+    def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
         """
         Starts a new thread for counting the words in the given file.
 
@@ -135,7 +135,7 @@ class FileWindow(QDialog):
         self.count_thread.finished.connect(self.handle_finished_counting_words)
         self.count_thread.start()
 
-    def handle_finished_counting_words(self, counted_words_list):
+    def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> None:
         """
         Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
         If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
@@ -154,7 +154,7 @@ class FileWindow(QDialog):
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """
-        Sets a table widget and displays the counted and sorted words with their counts.
+        Sets a table widget (by using set_table method) and displays the counted and sorted words with their counts.
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         :return: None

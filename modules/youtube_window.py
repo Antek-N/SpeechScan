@@ -184,7 +184,7 @@ class YouTubeWindow(QDialog):
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """
-        Sets a table widget and displays the counted and sorted words with their counts.
+        Sets a table widget (by using set_table method) and displays the counted and sorted words with their counts.
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         :return: None
