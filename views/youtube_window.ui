@@ -232,6 +232,35 @@
     </rect>
    </property>
   </widget>
+  <widget class="QLabel" name="loading_widget">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>160</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <zorder>loading_widget</zorder>
+  <zorder>label_3</zorder>
+  <zorder>line</zorder>
+  <zorder>count_button</zorder>
+  <zorder>label</zorder>
+  <zorder>yt_url_field</zorder>
+  <zorder>line_2</zorder>
+  <zorder>line_3</zorder>
+  <zorder>yt_title_widget</zorder>
+  <zorder>cancel_button</zorder>
+  <zorder>line_4</zorder>
+  <zorder>line_5</zorder>
+  <zorder>icon_widget</zorder>
+  <zorder>words_table_widget</zorder>
+  <zorder>label_2</zorder>
+  <zorder>api_key_field</zorder>
  </widget>
  <resources/>
  <connections/>

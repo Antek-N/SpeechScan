@@ -4,6 +4,7 @@ from typing import Union
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView, QFileDialog
 from PyQt5.uic import loadUi
+from PyQt5.QtGui import QMovie
 import modules.count_words_thread
 
 
@@ -51,7 +52,8 @@ class FileWindow(QDialog):
             self.file_path_field.setText(file_path)
 
     def submit(self) -> Union[None, int]:
-        """
+        """Submits the count_button
+
         Retrieves the chosen file and sends it to the count_words function in the count_words.py
         to count word occurrences in new thread (by using count.words_thread.py) and after that display the
         results (words with number of occurrences) on the screen.
@@ -76,6 +78,8 @@ class FileWindow(QDialog):
         try:
             # Retrieve the API key from the text field and count the words using count_words.py
             api_key = self.api_key_field.text()
+            self.start_loading_animation()
+            self.change_count_button_text(True)
             self.start_words_counting_in_new_thread(api_key, file_path)
 
         except Exception as ex:
@@ -123,6 +127,40 @@ class FileWindow(QDialog):
         else:
             return False
 
+    def start_loading_animation(self) -> None:
+        """
+        Starts the loading animation when counting the words.
+
+        :param: None
+        :return: None
+        """
+        loading_movie = QMovie("img/loading.gif")
+        self.loading_widget.setMovie(loading_movie)
+        self.loading_widget.setScaledContents(True)
+        loading_movie.start()
+
+    def stop_loading_animation(self) -> None:
+        """
+        Stops the loading animation when the word count is finished.
+
+        :param: None
+        :return: None
+        """
+        self.loading_widget.movie().stop()
+        self.loading_widget.clear()
+
+    def change_count_button_text(self, is_counting: bool) -> None:
+        """
+        Changes the text on the count_button depending on the current state of counting.
+
+        :param is_counting: True if counting is in progress, False otherwise
+        :return: None
+        """
+        if is_counting:
+            self.count_button.setText("Counting...")
+        else:
+            self.count_button.setText("Count")
+
     def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
         """
         Starts a new thread for counting the words in the given file.
@@ -139,7 +177,8 @@ class FileWindow(QDialog):
         """
         Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
         If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
-        with the counted words list and displays it on the screen.
+        with the counted words list and displays it on the screen. Finally, stops the loading animation and changes the
+        text in the count_button to "Count".
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         or message with error (str)
@@ -151,6 +190,8 @@ class FileWindow(QDialog):
         else:
             # Else set table and display counted words list
             self.set_table_and_display_counted_words(counted_words_list)
+        self.change_count_button_text(False)
+        self.stop_loading_animation()
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """

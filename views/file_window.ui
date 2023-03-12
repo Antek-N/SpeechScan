@@ -209,6 +209,33 @@
     <bool>true</bool>
    </property>
   </widget>
+  <widget class="QLabel" name="loading_widget">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>160</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <zorder>loading_widget</zorder>
+  <zorder>file_path_field</zorder>
+  <zorder>browse_button</zorder>
+  <zorder>label</zorder>
+  <zorder>line</zorder>
+  <zorder>label_3</zorder>
+  <zorder>count_button</zorder>
+  <zorder>cancel_button</zorder>
+  <zorder>line_3</zorder>
+  <zorder>line_4</zorder>
+  <zorder>words_table_widget</zorder>
+  <zorder>label_2</zorder>
+  <zorder>api_key_field</zorder>
+  <zorder>error_widget</zorder>
  </widget>
  <resources/>
  <connections/>

@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView
 from PyQt5.uic import loadUi
 from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QMovie
 from pytube import YouTube
 import modules.count_words_thread
 
@@ -41,12 +42,14 @@ class YouTubeWindow(QDialog):
         self.count_thread = None
 
     def submit(self) -> Union[None, int]:
-        """
-        Retrieves the URL of the YouTube video. If the URL is valid, sets the video title and thumbnail,
-        downloads the audio from the YouTube video, and sends it to the count_words function in the count_words.py
-        to count word occurrences in new thread (by using count.words_thread.py) and after that display the
-        results (words with number of occurrences) on the screen. Finally, removes the temporary file containing
-        the audio (in handle_finished_counting_words method).
+        """Submits the count_button
+
+        Retrieves the URL of the YouTube video. If the URL is valid, sets the video title and thumbnail, starts the
+        loading animation and changes the count_button text to "Counting...", downloads the audio from the YouTube
+        video, and sends it to the count_words function in the count_words.py to count word occurrences in new
+        thread (by using count.words_thread.py) and after that display the results (words with number of occurrences)
+        on the screen. Finally, removes the temporary file containing the audio (in handle_finished_counting_words
+        method).
 
         :param: None
         :return: None if no error occurs, 0 otherwise
@@ -61,6 +64,8 @@ class YouTubeWindow(QDialog):
 
         try:
             # If the URL is valid and the video exist:
+            self.start_loading_animation()
+            self.change_count_button_text(True)
             self.set_video_title(yt_url)
             self.set_video_thumbnail(yt_url)
             self.file_path = self.download_video_as_mp3(yt_url)
@@ -135,6 +140,40 @@ class YouTubeWindow(QDialog):
         except Exception as ex:
             logging.warning(ex)
 
+    def start_loading_animation(self) -> None:
+        """
+        Starts the loading animation when counting the words.
+
+        :param: None
+        :return: None
+        """
+        loading_movie = QMovie("img/loading.gif")
+        self.loading_widget.setMovie(loading_movie)
+        self.loading_widget.setScaledContents(True)
+        loading_movie.start()
+
+    def stop_loading_animation(self) -> None:
+        """
+        Stops the loading animation when the word count is finished.
+
+        :param: None
+        :return: None
+        """
+        self.loading_widget.movie().stop()
+        self.loading_widget.clear()
+
+    def change_count_button_text(self, is_counting: bool) -> None:
+        """
+        Changes the text on the count_button depending on the current state of counting.
+
+        :param is_counting: True if counting is in progress, False otherwise
+        :return: None
+        """
+        if is_counting:
+            self.count_button.setText("Counting...")
+        else:
+            self.count_button.setText("Count")
+
     @staticmethod
     def download_video_as_mp3(yt_url: str) -> str:
         """
@@ -167,7 +206,7 @@ class YouTubeWindow(QDialog):
         Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
         If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
         with the counted words list and displays it on the screen. Finally, removes the temporary file containing
-        the audio.
+        the audio, stops the loading animation and changes the text in the count_button to "Count".
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
          or message with error (str)
@@ -180,6 +219,8 @@ class YouTubeWindow(QDialog):
             # Else set table and display counted words list
             self.set_table_and_display_counted_words(counted_words_list)
         # Remove downloaded file
+        self.change_count_button_text(False)
+        self.stop_loading_animation()
         os.remove(self.file_path)
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
