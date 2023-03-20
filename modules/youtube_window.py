@@ -64,6 +64,7 @@ class YouTubeWindow(QDialog):
 
         try:
             # If the URL is valid and the video exist:
+            self.count_button.setEnabled(False)  # Disable the count_button
             self.start_loading_animation()
             self.change_count_button_text(True)
             self.set_video_title(yt_url)
@@ -220,6 +221,7 @@ class YouTubeWindow(QDialog):
             self.set_table_and_display_counted_words(counted_words_list)
         # Remove downloaded file
         self.change_count_button_text(False)
+        self.count_button.setEnabled(True)  # Re-enable the count_button
         self.stop_loading_animation()
         os.remove(self.file_path)
 

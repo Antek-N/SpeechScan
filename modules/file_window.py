@@ -78,6 +78,7 @@ class FileWindow(QDialog):
         try:
             # Retrieve the API key from the text field and count the words using count_words.py
             api_key = self.api_key_field.text()
+            self.count_button.setEnabled(False)  # Disable the count_button
             self.start_loading_animation()
             self.change_count_button_text(True)
             self.start_words_counting_in_new_thread(api_key, file_path)
@@ -191,6 +192,7 @@ class FileWindow(QDialog):
             # Else set table and display counted words list
             self.set_table_and_display_counted_words(counted_words_list)
         self.change_count_button_text(False)
+        self.count_button.setEnabled(True)  # Re-enable the count_button
         self.stop_loading_animation()
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
