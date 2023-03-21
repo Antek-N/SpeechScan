@@ -1,6 +1,5 @@
 import os
 import logging
-from tempfile import NamedTemporaryFile
 from typing import Union
 import urllib.request
 import urllib.parse
@@ -11,6 +10,7 @@ from PyQt5.QtGui import QPixmap
 from PyQt5.QtGui import QMovie
 from pytube import YouTube
 import modules.count_words_thread
+import modules.download_video_thread
 
 
 class YouTubeWindow(QDialog):
@@ -39,17 +39,18 @@ class YouTubeWindow(QDialog):
         # Return to the start_window after clicking the Cancel button
         self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
         self.file_path = ""
+        self.download_video_thread = None
         self.count_thread = None
 
     def submit(self) -> Union[None, int]:
         """Submits the count_button
 
-        Retrieves the URL of the YouTube video. If the URL is valid, sets the video title and thumbnail, starts the
-        loading animation and changes the count_button text to "Counting...", downloads the audio from the YouTube
-        video, and sends it to the count_words function in the count_words.py to count word occurrences in new
-        thread (by using count.words_thread.py) and after that display the results (words with number of occurrences)
-        on the screen. Finally, removes the temporary file containing the audio (in handle_finished_counting_words
-        method).
+        Submits the count_button and downloads the audio from the YouTube video. If the URL is valid, sets
+        the video title and thumbnail, starts the loading animation, and changes the count_button text
+        to "Counting...". The audio from YouTube video is downloaded as a temporary file in a new thread by calling
+        the function start_download_video_in_new_thread. Then, the word counting is performed in a separate thread,
+        and the results (words with number of occurrences) are displayed on the screen. Finally, the temporary file
+        containing the audio is removed.
 
         :param: None
         :return: None if no error occurs, 0 otherwise
@@ -69,9 +70,7 @@ class YouTubeWindow(QDialog):
             self.change_count_button_text(True)
             self.set_video_title(yt_url)
             self.set_video_thumbnail(yt_url)
-            self.file_path = self.download_video_as_mp3(yt_url)
-            api_key = self.api_key_field.text()
-            self.start_words_counting_in_new_thread(api_key, self.file_path)
+            self.start_download_video_in_new_thread(yt_url)
         except Exception as ex:
             logging.warning(ex)
             print(ex)
@@ -175,24 +174,38 @@ class YouTubeWindow(QDialog):
         else:
             self.count_button.setText("Count")
 
-    @staticmethod
-    def download_video_as_mp3(yt_url: str) -> str:
+    def start_download_video_in_new_thread(self, yt_url: str) -> None:
         """
-        Downloads video to temporary .MP3 file and returns path to this file
+        Starts a new thread for downloading the video from the given YouTube URL.
+
+        The remaining part of the code is executed in the connected method handle_finished_downloading_video() after
+        completing all the operations in the new thread.
 
         :param yt_url: the YouTube video URL.
-        :return: the path to the downloaded MP3 file.
+        :return: None
         """
-        yt = YouTube(yt_url)
-        video = yt.streams.filter(only_audio=True).first()
-        temp_file = NamedTemporaryFile(delete=False, suffix=".mp3")
-        video.download(filename=temp_file.name)
-        file_path = temp_file.name
-        return file_path
+        self.download_video_thread = modules.download_video_thread.DownloadVideoThread(yt_url)
+        self.download_video_thread.finished.connect(self.handle_finished_downloading_video)
+        self.download_video_thread.start()
+
+    def handle_finished_downloading_video(self, file_path: str) -> None:
+        """
+        Handles the finished event of the DownloadVideoThread, which emits the file_path to the MP3 temporary file.
+        Next starts counting words in this file.
+
+        :param file_path: the path to the audio file
+        :return: None
+        """
+        self.file_path = file_path  # this is necessary for later removal of the temporary file
+        api_key = self.api_key_field.text()
+        self.start_words_counting_in_new_thread(api_key, file_path)
 
     def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
         """
         Starts a new thread for counting the words in the given file (temporary file with audio of YouTube video).
+
+        The remaining part of the code is executed in the connected method handle_finished_counting_words() after
+        completing all the operations in the new thread.
 
         :param api_key: the API key for AssemblyAI
         :param file_path: the path to the audio file
