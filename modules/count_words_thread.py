@@ -21,9 +21,9 @@ class CountWordsThread(QThread):
 
     def run(self) -> None:
         """
-        Runs the thread which counts the words in the .mp3 file using the CountWords class from the
-        count_words module, emits the finished signal with the counted words list or error message as
-        an argument.
+        Runs the thread which counts the words in the .mp3 file using the CountWords class from the count_words module.
+        Emits the finished signal with the counted words list or error message as an argument.
+        This method overrides the run method in the QThread class.
 
         :param: None
         :return: None
