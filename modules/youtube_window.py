@@ -73,7 +73,7 @@ class YouTubeWindow(QDialog):
             self.start_download_video_in_new_thread(yt_url)
         except Exception as ex:
             logging.warning(ex)
-            print(ex)
+            self.display_error_message("Unknown problem encountered")
 
     def reset_window_to_default(self) -> None:
         """

@@ -85,6 +85,7 @@ class FileWindow(QDialog):
 
         except Exception as ex:
             logging.warning(ex)
+            self.display_error_message("Unknown problem encountered")
 
     def reset_window_to_default(self) -> None:
         """
