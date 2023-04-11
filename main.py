@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication
@@ -18,6 +19,10 @@ class App:
         """
         # Create app
         app = QApplication(sys.argv)
+
+        # Load app style from qss file
+        app.setStyleSheet(Path('style/style.qss').read_text())
+
         # Create stacked widget
         widgets = QtWidgets.QStackedWidget()
 

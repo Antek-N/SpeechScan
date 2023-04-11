@@ -114,7 +114,6 @@ class YouTubeWindow(QDialog):
         """
         yt = YouTube(yt_url)
         title = yt.title
-        self.yt_title_widget.setStyleSheet("color: rgb(0, 0, 0);")
         self.yt_title_widget.setText(f"Title:  {title}")
 
     def set_video_thumbnail(self, yt_url: str) -> None:
@@ -262,7 +261,7 @@ class YouTubeWindow(QDialog):
         """
         self.words_table_widget.setRowCount(len(counted_words_list))
         self.words_table_widget.setColumnCount(2)
-        self.words_table_widget.setHorizontalHeaderLabels(["Word", "Repetitions"])
+        self.words_table_widget.setHorizontalHeaderLabels(["Word", "Number of occurrences"])
         self.words_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.words_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 

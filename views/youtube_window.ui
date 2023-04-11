@@ -41,25 +41,12 @@
     <string>List of words:</string>
    </property>
   </widget>
-  <widget class="Line" name="line">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>150</y>
-     <width>411</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
-   </property>
-  </widget>
   <widget class="QPushButton" name="count_button">
    <property name="geometry">
     <rect>
-     <x>210</x>
+     <x>180</x>
      <y>110</y>
-     <width>171</width>
+     <width>201</width>
      <height>41</height>
     </rect>
    </property>
@@ -88,32 +75,6 @@
      <width>261</width>
      <height>21</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="Line" name="line_2">
-   <property name="geometry">
-    <rect>
-     <x>180</x>
-     <y>100</y>
-     <width>20</width>
-     <height>61</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Vertical</enum>
-   </property>
-  </widget>
-  <widget class="Line" name="line_3">
-   <property name="geometry">
-    <rect>
-     <x>190</x>
-     <y>90</y>
-     <width>211</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="orientation">
-    <enum>Qt::Horizontal</enum>
    </property>
   </widget>
   <widget class="QLabel" name="yt_title_widget">
@@ -236,9 +197,9 @@
    <property name="geometry">
     <rect>
      <x>290</x>
-     <y>160</y>
+     <y>150</y>
      <width>111</width>
-     <height>31</height>
+     <height>41</height>
     </rect>
    </property>
    <property name="text">
@@ -247,12 +208,9 @@
   </widget>
   <zorder>loading_widget</zorder>
   <zorder>label_3</zorder>
-  <zorder>line</zorder>
   <zorder>count_button</zorder>
   <zorder>label</zorder>
   <zorder>yt_url_field</zorder>
-  <zorder>line_2</zorder>
-  <zorder>line_3</zorder>
   <zorder>yt_title_widget</zorder>
   <zorder>cancel_button</zorder>
   <zorder>line_4</zorder>

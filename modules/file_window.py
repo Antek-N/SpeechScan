@@ -222,7 +222,7 @@ class FileWindow(QDialog):
         """
         self.words_table_widget.setRowCount(len(counted_words_list))
         self.words_table_widget.setColumnCount(2)
-        self.words_table_widget.setHorizontalHeaderLabels(["Word", "Repetitions"])
+        self.words_table_widget.setHorizontalHeaderLabels(["Word", "Number of occurrences"])
         self.words_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.words_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
