@@ -2,7 +2,6 @@ import os
 import logging
 from typing import Union
 import urllib.request
-import urllib.parse
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView
 from PyQt5.uic import loadUi
@@ -11,6 +10,7 @@ from PyQt5.QtGui import QMovie
 from pytube import YouTube
 import modules.count_words_thread
 import modules.download_video_thread
+import modules.check_url_thread
 
 
 class YouTubeWindow(QDialog):
@@ -18,11 +18,11 @@ class YouTubeWindow(QDialog):
 
     YouTubeWindow class performs the following tasks:
     -loading YouTubeWindow GUI
-    -checking the URL validity
+    -checking the URL validity in a new thread
     -checking if the video exists
     -setting the video title and thumbnail
     -downloading the audio
-    -send audio file to count word occurrences in new thread
+    -send audio file to count word occurrences in a new thread
     -displaying the results of count.
     """
     def __init__(self, widgets):
@@ -39,71 +39,88 @@ class YouTubeWindow(QDialog):
         # Return to the start_window after clicking the Cancel button
         self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
         self.file_path = ""
+        self.yt_url = ""
         self.download_video_thread = None
         self.count_thread = None
+        self.check_url_thread = None
 
-    def submit(self) -> Union[None, int]:
-        """Submits the count_button
+    def submit(self) -> None:
+        """Submits the process of counting the words in the video.
 
-        Submits the count_button and downloads the audio from the YouTube video. If the URL is valid, sets
-        the video title and thumbnail, starts the loading animation, and changes the count_button text
-        to "Counting...". The audio from YouTube video is downloaded as a temporary file in a new thread by calling
-        the function start_download_video_in_new_thread. Then, the word counting is performed in a separate thread,
-        and the results (words with number of occurrences) are displayed on the screen. Finally, the temporary file
-        containing the audio is removed.
-
-        :param: None
-        :return: None if no error occurs, 0 otherwise
-        """
-        self.reset_window_to_default()
-
-        yt_url = self.yt_url_field.text()
-
-        if not self.is_url_valid(yt_url):
-            self.display_error_message("URL is invalid")
-            return 0
-
-        try:
-            # If the URL is valid and the video exist:
-            self.count_button.setEnabled(False)  # Disable the count_button
-            self.start_loading_animation()
-            self.change_count_button_text(True)
-            self.set_video_title(yt_url)
-            self.set_video_thumbnail(yt_url)
-            self.start_download_video_in_new_thread(yt_url)
-        except Exception as ex:
-            logging.warning(ex)
-            self.display_error_message("Unknown problem encountered")
-
-    def reset_window_to_default(self) -> None:
-        """
-        Clears the words table widget to remove any previous results.
+        Disables the count_button and changes the button text to "Counting...".
+        Resets the window to the default by clearing the words table, title and thumbnail.
+        Starts a new thread for checking the validity of the YouTube URL entered by the user and downloading the video.
 
         :param: None
         :return: None
         """
+        self.count_button.setEnabled(False)  # Disable the count_button
+        self.change_count_button_text(True)
+
+        self.start_loading_animation()
+
+        self.reset_window_to_default()
+
+        self.yt_url = self.yt_url_field.text().strip()
+
+        self.start_checking_url_in_new_thread()
+
+    def reset_window_to_default(self) -> None:
+        """
+        Clears the words table, thumbnail and title widgets.
+
+        :param: None
+        :return: None
+        """
+        self.yt_title_widget.setStyleSheet("color: rgb(177, 177, 177);")
+        self.yt_title_widget.setText(f"Title:")
+        self.icon_widget.clear()
         self.words_table_widget.clear()
         self.words_table_widget.setRowCount(0)
         self.words_table_widget.setColumnCount(0)
 
-    @staticmethod
-    def is_url_valid(yt_url: str) -> bool:
+    def start_checking_url_in_new_thread(self) -> None:
         """
-        Checks if the YouTube URL is valid and leads to video on YouTube.
+        Starts a new thread for checking the validity of the YouTube URL entered by the user.
 
-        The function checks if it can create a YouTube object and retrieve the video stream from it, indicating
-        that the URL is valid and leads to a video on YouTube.
-        If the operation fails, it means that the URL is not valid or does not lead to a video on YouTube.
+        The remaining part of the code is executed in the connected method handle_finished_url_checking() after
+        completing all the operations in the new thread.
 
-        :param yt_url: the YouTube video URL.
-        :return: True if the URL is valid, False otherwise.
+        :return: None
         """
-        try:
-            yt = YouTube(yt_url).streams.first().url
-            return True
-        except Exception as ex:
-            logging.warning(ex)
-            return False
+        self.check_url_thread = modules.check_url_thread.CheckURLThread(self.yt_url)
+        self.check_url_thread.finished.connect(self.handle_finished_url_checking)
+        self.check_url_thread.start()
+
+    def handle_finished_url_checking(self, is_valid: bool) -> Union[None, int]:
+        """
+        Handles the finished event of the CheckURLThread, which checks if the given YouTube URL is valid and leads
+        to a video.
+
+        If the URL is valid and the video exists, sets the title and thumbnail of the video and starts downloading
+        the video in a new thread. If the operation fails, it displays an error message.
+
+        :param is_valid: True if the URL is valid, False otherwise
+        :return: None if no error occurs, 0 otherwise
+        """
+        if is_valid:
+            try:
+                # If the URL is valid and the video exist:
+                self.set_video_title(self.yt_url)
+                self.set_video_thumbnail(self.yt_url)
+                self.start_download_video_in_new_thread(self.yt_url)
+            except Exception as ex:
+                logging.warning(ex)
+                self.display_error_message("Unknown problem encountered")
+                self.stop_loading_animation()
+                self.change_count_button_text(False)
+                self.count_button.setEnabled(True)  # Re-enable the count_button
+        else:
+            self.display_error_message("URL is invalid")
+            self.stop_loading_animation()
+            self.change_count_button_text(False)
+            self.count_button.setEnabled(True)  # Re-enable the count_button
+            return 0
 
     def set_video_title(self, yt_url: str) -> None:
         """
@@ -138,40 +155,6 @@ class YouTubeWindow(QDialog):
             os.remove(thumbnail[0])
         except Exception as ex:
             logging.warning(ex)
-
-    def start_loading_animation(self) -> None:
-        """
-        Starts the loading animation when counting the words.
-
-        :param: None
-        :return: None
-        """
-        loading_movie = QMovie("img/loading.gif")
-        self.loading_widget.setMovie(loading_movie)
-        self.loading_widget.setScaledContents(True)
-        loading_movie.start()
-
-    def stop_loading_animation(self) -> None:
-        """
-        Stops the loading animation when the word count is finished.
-
-        :param: None
-        :return: None
-        """
-        self.loading_widget.movie().stop()
-        self.loading_widget.clear()
-
-    def change_count_button_text(self, is_counting: bool) -> None:
-        """
-        Changes the text on the count_button depending on the current state of counting.
-
-        :param is_counting: True if counting is in progress, False otherwise
-        :return: None
-        """
-        if is_counting:
-            self.count_button.setText("Counting...")
-        else:
-            self.count_button.setText("Count")
 
     def start_download_video_in_new_thread(self, yt_url: str) -> None:
         """
@@ -214,7 +197,7 @@ class YouTubeWindow(QDialog):
         self.count_thread.finished.connect(self.handle_finished_counting_words)
         self.count_thread.start()
 
-    def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> None:
+    def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> Union[None, int]:
         """
         Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
         If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
@@ -223,11 +206,16 @@ class YouTubeWindow(QDialog):
 
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
          or message with error (str)
-        :return: None
+        :return: None if no error occurs, 0 otherwise
         """
         if counted_words_list in ["invalid api key", "file transcription error"]:
             # Display the error message if API key or file transcription is invalid
             self.display_error_message(counted_words_list)
+            self.stop_loading_animation()
+            self.change_count_button_text(False)
+            self.count_button.setEnabled(True)  # Re-enable the count_button
+            os.remove(self.file_path)
+            return 0
         else:
             # Else set table and display counted words list
             self.set_table_and_display_counted_words(counted_words_list)
@@ -264,6 +252,40 @@ class YouTubeWindow(QDialog):
         self.words_table_widget.setHorizontalHeaderLabels(["Word", "Number of occurrences"])
         self.words_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.words_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+    def start_loading_animation(self) -> None:
+        """
+        Starts the loading animation when counting the words.
+
+        :param: None
+        :return: None
+        """
+        loading_movie = QMovie("img/loading.gif")
+        self.loading_widget.setMovie(loading_movie)
+        self.loading_widget.setScaledContents(True)
+        loading_movie.start()
+
+    def stop_loading_animation(self) -> None:
+        """
+        Stops the loading animation when the word count is finished.
+
+        :param: None
+        :return: None
+        """
+        self.loading_widget.movie().stop()
+        self.loading_widget.clear()
+
+    def change_count_button_text(self, is_counting: bool) -> None:
+        """
+        Changes the text on the count_button depending on the current state of counting.
+
+        :param is_counting: True if counting is in progress, False otherwise
+        :return: None
+        """
+        if is_counting:
+            self.count_button.setText("Counting...")
+        else:
+            self.count_button.setText("Count")
 
     def display_error_message(self, error_code: str) -> None:
         """
