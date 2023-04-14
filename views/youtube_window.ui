@@ -96,7 +96,7 @@
     <string>Title:</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="cancel_button">
+  <widget class="QPushButton" name="back_button">
    <property name="geometry">
     <rect>
      <x>300</x>
@@ -106,7 +106,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Cancel</string>
+    <string>Back</string>
    </property>
   </widget>
   <widget class="Line" name="line_4">
@@ -212,7 +212,7 @@
   <zorder>label</zorder>
   <zorder>yt_url_field</zorder>
   <zorder>yt_title_widget</zorder>
-  <zorder>cancel_button</zorder>
+  <zorder>back_button</zorder>
   <zorder>line_4</zorder>
   <zorder>line_5</zorder>
   <zorder>icon_widget</zorder>

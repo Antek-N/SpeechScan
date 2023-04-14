@@ -87,7 +87,7 @@
     <string>Count</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="cancel_button">
+  <widget class="QPushButton" name="back_button">
    <property name="geometry">
     <rect>
      <x>300</x>
@@ -97,7 +97,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Cancel</string>
+    <string>Back</string>
    </property>
   </widget>
   <widget class="Line" name="line_3">
@@ -215,7 +215,7 @@
   <zorder>label</zorder>
   <zorder>label_3</zorder>
   <zorder>count_button</zorder>
-  <zorder>cancel_button</zorder>
+  <zorder>back_button</zorder>
   <zorder>line_3</zorder>
   <zorder>line_4</zorder>
   <zorder>words_table_widget</zorder>

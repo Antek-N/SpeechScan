@@ -32,7 +32,7 @@ class FileWindow(QDialog):
         self.browse_button.clicked.connect(self.choose_file)
         self.count_button.clicked.connect(self.submit)
         # Return to the start_window after clicking the Cancel button
-        self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
+        self.back_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
         self.count_thread = None
 
     def choose_file(self) -> None:
@@ -95,7 +95,7 @@ class FileWindow(QDialog):
         :return: None
         """
         # Reset the error widget by setting its style sheet and text to default values
-        self.error_widget.setStyleSheet("color: rgb(0, 0, 0);")
+        self.error_widget.setStyleSheet("color: rgb(177, 177, 177);")
         self.error_widget.setText("==============")
         # Clear the words table widget to remove any previous results
         self.words_table_widget.clear()

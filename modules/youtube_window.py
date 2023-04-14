@@ -37,7 +37,7 @@ class YouTubeWindow(QDialog):
         loadUi("views/youtube_window.ui", self)
         self.count_button.clicked.connect(self.submit)
         # Return to the start_window after clicking the Cancel button
-        self.cancel_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
+        self.back_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
         self.file_path = ""
         self.yt_url = ""
         self.download_video_thread = None
