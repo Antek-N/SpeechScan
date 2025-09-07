@@ -1,45 +1,49 @@
-from tempfile import NamedTemporaryFile
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 from PyQt5.QtCore import QThread, pyqtSignal
-from pytube import YouTube
+from yt_dlp import YoutubeDL
 
 
 class DownloadVideoThread(QThread):
-    """DownloadVideoThread is a thread class for downloading video from given YouTube URL."""
-
-    finished = pyqtSignal(object)  # A signal emitted when the thread has finished
+    """Downloads audio from YouTube into a temporary directory (yt-dlp)."""
+    finished = pyqtSignal(object)   # A signal emitted when the thread has finished
+    failed = pyqtSignal(str)        # A signal emitted when the download fails (returns an error message)
 
     def __init__(self, yt_url: str) -> None:
-        """
-        Initializes the DownloadVideoThread object.
-
-        :param yt_url: the YouTube video URL
-        :return: None
-        """
         super().__init__()
         self.yt_url = yt_url
+        self._tmpdir = None  # keep a reference to the temporary directory so it is not deleted too early
 
     def run(self) -> None:
-        """
-        Runs the thread which downloading audio from the video from YouTube video to temporary .MP3 file.
-        Emits the finished signal with the path to this downloaded temporary .MP3 file.
-        This method overrides the run method in the QThread class.
+        try:
+            # download audio and return the file path
+            file_path = self._download_audio()
+            # emit finished signal with the full file path
+            self.finished.emit(file_path)  # type: ignore[attr-defined]  # Qt signal, resolved at runtime
+        except Exception as ex:
+            # in case of error, emit failed signal with the error message
+            self.failed.emit(str(ex))  # type: ignore[attr-defined]  # Qt signal, resolved at runtime
 
-        :param: None
-        :return: None
-        """
-        file_path = self.download_video_as_mp3()
-        self.finished.emit(file_path)
+    def _download_audio(self) -> str:
+        # create a temporary directory where the audio will be saved
+        self._tmpdir = TemporaryDirectory()
+        out_dir = Path(self._tmpdir.name)
+        # set the output filename template
+        out_tmpl = str(out_dir / "audio.%(ext)s")
 
-    def download_video_as_mp3(self) -> str:
-        """
-        Downloads video to temporary .MP3 file and returns path to this file
+        # yt-dlp configuration options
+        yt_download_options = {
+            "format": "bestaudio/best",  # choose the best available audio quality
+            "outtmpl": out_tmpl,        # output filename template
+            "quiet": True,              # suppress console logs
+            "no_warnings": True,        # skip warnings
+        }
 
-        :param: None
-        :return: the path to the downloaded MP3 file.
-        """
-        yt = YouTube(self.yt_url)
-        video = yt.streams.filter(only_audio=True).first()
-        temp_file = NamedTemporaryFile(delete=False, suffix=".mp3")
-        video.download(filename=temp_file.name)
-        file_path = temp_file.name
+        # download audio with yt-dlp
+        with YoutubeDL(yt_download_options) as youtube_downloader:
+            # download and get metadata
+            info = youtube_downloader.extract_info(self.yt_url, download=True)
+            # prepare the actual filename (with extension)
+            file_path = youtube_downloader.prepare_filename(info)
         return file_path

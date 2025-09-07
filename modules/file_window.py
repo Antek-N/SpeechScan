@@ -1,10 +1,21 @@
 import os
 import logging
 from typing import Union
+
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QDialog, QAbstractItemView, QHeaderView, QFileDialog
-from PyQt5.uic import loadUi
+from PyQt5.QtWidgets import (
+    QDialog,
+    QPushButton,
+    QLineEdit,
+    QLabel,
+    QTableWidget,
+    QAbstractItemView,
+    QHeaderView,
+    QFileDialog,
+)
+from PyQt5.uic import loadUi  # type: ignore[import]
 from PyQt5.QtGui import QMovie
+
 import modules.count_words_thread
 
 
@@ -19,6 +30,16 @@ class FileWindow(QDialog):
         -send audio file to count word occurrences in new thread
         -displaying the results of count.
     """
+    # GUI element references (populated dynamically by loadUi)
+    browse_button: QPushButton
+    count_button: QPushButton
+    back_button: QPushButton
+    file_path_field: QLineEdit
+    api_key_field: QLineEdit
+    error_widget: QLabel
+    loading_widget: QLabel
+    words_table_widget: QTableWidget
+
     def __init__(self, widgets) -> None:
         """
         Initialize the FileWindow and load user interface.
@@ -27,12 +48,23 @@ class FileWindow(QDialog):
         :return: None
         """
         super().__init__()
-        # Load user interface
+
+        # Load UI layout from file_window.ui (Qt Designer .ui file)
         loadUi("views/file_window.ui", self)
-        self.browse_button.clicked.connect(self.choose_file)
-        self.count_button.clicked.connect(self.submit)
-        # Return to the start_window after clicking the Cancel button
-        self.back_button.clicked.connect(lambda: widgets.setCurrentIndex(0))
+
+        # Connect "Browse" button - open file chooser
+        self.browse_button.clicked.connect(self.choose_file)  # type: ignore[attr-defined]  #...
+        # ...created dynamically by loadUi, Qt signal has .connect()
+
+        # Connect "Count" button - start processing and word counting
+        self.count_button.clicked.connect(self.submit)  # type: ignore[attr-defined]  #...
+        # ...created dynamically by loadUi, Qt signal has .connect()
+
+        # Connect "Back" button - return to start window (index 0 in stacked widgets)
+        self.back_button.clicked.connect(lambda: widgets.setCurrentIndex(0))  # type: ignore[attr-defined]  #...
+        # ...created dynamically by loadUi, Qt signal has .connect()
+
+        # Placeholder for worker thread (word counting)
         self.count_thread = None
 
     def choose_file(self) -> None:
@@ -43,11 +75,15 @@ class FileWindow(QDialog):
         :param: None
         :return: None
         """
+        # Configure file dialog options (read-only, force Qt dialog instead of native)
         options = QFileDialog.Options()
         options |= QFileDialog.ReadOnly
         options |= QFileDialog.DontUseNativeDialog
+
+        # Show file chooser restricted to MP3 files
         file_path, _ = QFileDialog.getOpenFileName(self, "Choose file", "", "MP3 Files (*.mp3)", options=options)
 
+        # If a file was selected, update the input field
         if file_path:
             self.file_path_field.setText(file_path)
 
@@ -61,30 +97,42 @@ class FileWindow(QDialog):
         :param: None
         :return: None if no error occurs, 0 otherwise
         """
+        # Reset GUI elements to a clean state (clear errors, clear results table)
         self.reset_window_to_default()
 
+        # Get file path entered/selected by user
         file_path = self.file_path_field.text()
 
+        # Validate: check if file exists
         if not self.check_file_existence(file_path):
-            # Display error if the file doesn't exist
             self.display_error_message("file doesn't exist")
             return 0
 
+        # Validate: check if file has .mp3 extension
         if not self.check_if_file_is_mp3(file_path):
-            # Display error if the file is not in mp3 format
             self.display_error_message("file must be in mp3 format")
             return 0
 
         try:
-            # Retrieve the API key from the text field and count the words using count_words.py
+            # Retrieve API key entered by user
             api_key = self.api_key_field.text()
-            self.count_button.setEnabled(False)  # Disable the count_button
+
+            # Prevent duplicate clicks while processing
+            self.count_button.setEnabled(False)
+
+            # Show animated loading spinner
             self.start_loading_animation()
+
+            # Update button text to indicate counting in progress
             self.change_count_button_text(True)
+
+            # Start worker thread that will handle transcription & counting
             self.start_words_counting_in_new_thread(api_key, file_path)
 
         except Exception as ex:
+            # Log unexpected errors (e.g. threading, API, UI issues)
             logging.warning(ex)
+            # Show generic error message in the UI
             self.display_error_message("Unknown problem encountered")
 
     def reset_window_to_default(self) -> None:
@@ -94,10 +142,11 @@ class FileWindow(QDialog):
         :param: None
         :return: None
         """
-        # Reset the error widget by setting its style sheet and text to default values
+        # Reset error label to neutral (gray) style and placeholder text
         self.error_widget.setStyleSheet("color: rgb(177, 177, 177);")
         self.error_widget.setText("==============")
-        # Clear the words table widget to remove any previous results
+
+        # Completely clear results table (remove headers, rows, and data)
         self.words_table_widget.clear()
         self.words_table_widget.setRowCount(0)
         self.words_table_widget.setColumnCount(0)
@@ -110,6 +159,7 @@ class FileWindow(QDialog):
         :param file_path: the path to the chosen file
         :return: True if the file exists, False otherwise
         """
+        # Use os.path.exists to validate the file path
         if os.path.exists(file_path):
             return True
         else:
@@ -123,7 +173,10 @@ class FileWindow(QDialog):
         :param file_path: the path to the chosen file
         :return: True if the file is in MP3 format, False otherwise
         """
+        # Split file path into (basename, extension)
         _, extension = os.path.splitext(file_path)
+
+        # Accept only files with .mp3 extension
         if extension == ".mp3":
             return True
         else:
@@ -136,9 +189,16 @@ class FileWindow(QDialog):
         :param: None
         :return: None
         """
+        # Load animated GIF for the "loading" indicator
         loading_movie = QMovie("img/loading.gif")
+
+        # Assign animation to the QLabel widget
         self.loading_widget.setMovie(loading_movie)
+
+        # Scale GIF to fit the label dimensions
         self.loading_widget.setScaledContents(True)
+
+        # Start playing the animation
         loading_movie.start()
 
     def stop_loading_animation(self) -> None:
@@ -148,7 +208,10 @@ class FileWindow(QDialog):
         :param: None
         :return: None
         """
+        # Stop the currently running animation
         self.loading_widget.movie().stop()
+
+        # Clear the label so no static frame remains
         self.loading_widget.clear()
 
     def change_count_button_text(self, is_counting: bool) -> None:
@@ -158,8 +221,10 @@ class FileWindow(QDialog):
         :param is_counting: True if counting is in progress, False otherwise
         :return: None
         """
+        # Show "Counting..." while background thread is active
         if is_counting:
             self.count_button.setText("Counting...")
+        # Restore default label when counting is done
         else:
             self.count_button.setText("Count")
 
@@ -171,8 +236,13 @@ class FileWindow(QDialog):
         :param file_path: the path to the audio file
         :return: None
         """
+        # Create background thread responsible for transcription + word counting
         self.count_thread = modules.count_words_thread.CountWordsThread(file_path, api_key)
+
+        # Connect thread's finished signal → handler that updates UI with results
         self.count_thread.finished.connect(self.handle_finished_counting_words)
+
+        # Launch the worker thread (runs in parallel without freezing GUI)
         self.count_thread.start()
 
     def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> None:
@@ -186,14 +256,20 @@ class FileWindow(QDialog):
         or message with error (str)
         :return: None
         """
+        # Handle known error messages returned by worker thread
         if counted_words_list in ["invalid api key", "file transcription error"]:
-            # Display the error message if API key or file transcription is invalid
             self.display_error_message(counted_words_list)
         else:
-            # Else set table and display counted words list
+            # Otherwise update table with counted words
             self.set_table_and_display_counted_words(counted_words_list)
+
+        # Restore button text back to "Count"
         self.change_count_button_text(False)
-        self.count_button.setEnabled(True)  # Re-enable the count_button
+
+        # Re-enable button after work finishes
+        self.count_button.setEnabled(True)
+
+        # Stop loading animation (spinner disappears)
         self.stop_loading_animation()
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
@@ -203,12 +279,16 @@ class FileWindow(QDialog):
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         :return: None
         """
+        # Prepare table (set rows, columns, headers, resize mode, disable editing)
         self.set_table(counted_words_list)
+
+        # Populate table with words and counts
         for i, word in enumerate(counted_words_list):
-            # Set word
+            # Column 0 → word
             item = QtWidgets.QTableWidgetItem(word[0])
             self.words_table_widget.setItem(i, 0, item)
-            # Set count
+
+            # Column 1 → count
             item = QtWidgets.QTableWidgetItem(str(word[1]))
             self.words_table_widget.setItem(i, 1, item)
 
@@ -220,10 +300,19 @@ class FileWindow(QDialog):
         :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
         :return: None
         """
+        # Set the number of rows to match the number of items in results
         self.words_table_widget.setRowCount(len(counted_words_list))
+
+        # Table always has 2 columns: word -> occurrence count
         self.words_table_widget.setColumnCount(2)
+
+        # Define column headers
         self.words_table_widget.setHorizontalHeaderLabels(["Word", "Number of occurrences"])
+
+        # Stretch columns to use the full table width
         self.words_table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Make cells read-only
         self.words_table_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
     def display_error_message(self, error_code: str) -> None:
@@ -233,6 +322,7 @@ class FileWindow(QDialog):
         :param error_code: error code indicating the type of error
         :return: None
         """
+        # Translate error code into a user-friendly message
         if error_code == "file doesn't exist":
             message = "File doesn't exist"
         elif error_code == "file must be in mp3 format":
@@ -243,5 +333,7 @@ class FileWindow(QDialog):
             message = "File transcription problem encountered"
         else:
             message = "Unknown problem encountered"
+
+        # Display the message in red in the error widget
         self.error_widget.setStyleSheet("color: rgb(200, 0, 0);")
         self.error_widget.setText(message)

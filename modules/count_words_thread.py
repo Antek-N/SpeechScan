@@ -1,4 +1,5 @@
 from PyQt5.QtCore import QThread, pyqtSignal
+
 import modules.count_words
 
 
@@ -21,12 +22,15 @@ class CountWordsThread(QThread):
 
     def run(self) -> None:
         """
-        Runs the thread which counts the words in the .mp3 file using the CountWords class from the count_words module.
+        Runs the thread which counts the words in the .mp3 file using the CountWords class
+        from the count_words module.
         Emits the finished signal with the counted words list or error message as an argument.
         This method overrides the run method in the QThread class.
 
         :param: None
         :return: None
         """
+        # count words using the count_words module
         counted_words_list = modules.count_words.CountWords(self.file_path, self.api_key).count_words()
-        self.finished.emit(counted_words_list)
+        # send the result via signal (word list or error message)
+        self.finished.emit(counted_words_list)  # type: ignore[attr-defined]  # Qt signal, resolved at runtime
