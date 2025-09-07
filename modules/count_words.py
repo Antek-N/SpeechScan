@@ -7,16 +7,15 @@ import modules.transcribe_audio
 
 class CountWords:
     """
-    CountWords is a class that transcribes audio from a given audio file (using transcribe_audio.py)
-    and counts the number of occurrences of each word in that transcription.
+    Transcribe audio and count word occurrences.
     """
 
     def __init__(self, file_path: str, api_key: str) -> None:
         """
         Initialize the class with the audio file path and API key.
 
-        :param file_path: the path to the audio file
-        :param api_key: the API key for AssemblyAI
+        :param file_path: Path to the audio file.
+        :param api_key: API key for AssemblyAI.
         :return: None
         """
         self.file_path = file_path
@@ -24,13 +23,13 @@ class CountWords:
 
     def count_words(self) -> Union[list, str]:
         """
-        Counts the number of occurrences of each word in a given audio file.
-        (main method of the class)
+        Count word occurrences in the given audio file.
 
+        :param: None
         :return:
-        - list of tuples, each tuple contains a word and its count in the form (word, count).
-        - str, "file transcription error" - if there is an error in the transcription process.
-        - str, "invalid api key" - if the AssemblyAI API key is invalid.
+            - list of (word, count) tuples if transcription is successful.
+            - str "file transcription error" if transcription fails.
+            - str "invalid api key" if the AssemblyAI API key is invalid.
         """
         # 1. Get the transcription of the audio file (text)
         transcription_text = self.get_transcription()
@@ -50,9 +49,10 @@ class CountWords:
 
     def get_transcription(self) -> str:
         """
-        Transcribes audio from a file into text.
+        Transcribe audio from a file into text.
 
-        :return: transcription of the audio
+        :param: None
+        :return: Transcription text as str.
         """
         # Get transcription using the transcribe_audio module
         transcription_text = modules.transcribe_audio.TranscribeMP3(self.file_path, self.api_key).on_execute()
@@ -61,11 +61,10 @@ class CountWords:
     @staticmethod
     def process_text_to_list(transcription_text: str) -> list:
         """
-        Processes the given text by removing punctuation, converting all words to lowercase
-        and splitting it into a list.
+        Process text: remove punctuation, lowercase, split into words.
 
-        :param transcription_text: text to process
-        :return: list of str, processed words
+        :param transcription_text: Text to process.
+        :return: List of words.
         """
         # Convert all characters to lowercase
         transcription_text = transcription_text.lower()
@@ -82,10 +81,10 @@ class CountWords:
     @staticmethod
     def count_and_sort_words(words_list: list) -> list:
         """
-        Count elements in the list and sort them by occurrences in descending order.
+        Count elements in the list and sort them by frequency (descending).
 
-        :param words_list: list of str, words to count and sort
-        :return: list of tuples, each tuple contains a word and its count in the form (word, count)
+        :param words_list: List of words to count and sort.
+        :return: List of (word, count) tuples.
         """
         # Count the number of occurrences of each word in the list
         counted_words = Counter(words_list)

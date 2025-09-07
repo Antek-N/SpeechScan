@@ -4,16 +4,18 @@ import modules.count_words
 
 
 class CountWordsThread(QThread):
-    """CountWordsThread is a thread class for counting words in a file."""
+    """
+    Thread class for counting words in an audio file.
+    """
 
     finished = pyqtSignal(object)  # A signal emitted when the thread has finished
 
     def __init__(self, file_path: str, api_key: str) -> None:
         """
-        Initializes the CountWordsThread object.
+        Initialize the CountWordsThread object.
 
-        :param api_key: the API key for AssemblyAI
-        :param file_path: the path to the audio file
+        :param api_key: API key for AssemblyAI.
+        :param file_path: Path to the audio file.
         :return: None
         """
         super().__init__()
@@ -22,10 +24,8 @@ class CountWordsThread(QThread):
 
     def run(self) -> None:
         """
-        Runs the thread which counts the words in the .mp3 file using the CountWords class
-        from the count_words module.
-        Emits the finished signal with the counted words list or error message as an argument.
-        This method overrides the run method in the QThread class.
+        Run the thread: count words in the .mp3 file using CountWords,
+        then emit the finished signal with results or error message.
 
         :param: None
         :return: None

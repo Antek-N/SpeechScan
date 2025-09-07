@@ -3,11 +3,20 @@ from PyQt5.uic import loadUi  # type: ignore[import]
 
 
 class StartWindow(QDialog):
-    """StartWindow is a class that loads start window GUI"""
+    """
+    Load and display the start window GUI.
+    """
+
     file_button: QPushButton
     youtube_button: QPushButton
 
     def __init__(self, widgets):
+        """
+        Initialize the StartWindow and load user interface.
+
+        :param widgets: Stacked program widgets.
+        :return: None
+        """
         super().__init__()
         # Load the UI layout from .ui file generated in Qt Designer
         loadUi("views/open_window.ui", self)

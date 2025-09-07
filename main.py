@@ -11,13 +11,17 @@ import modules.youtube_window
 
 
 class App:
-    """App is a main class of application"""
+    """
+    Main application class.
+    """
     def __init__(self):
         """
-        Initializes the application object.
-        Creates QStackedWidget and adds the windows (Start, File, YouTube) to it.
-        Displays the stacket widget.
-        Exits the application at the end of the Qt event loop.
+        Initialize and run the Qt application:
+        create the stacked widget, add windows (Start, File, YouTube),
+        show the UI, and start the event loop.
+
+        :param: None
+        :return: None
         """
         # Create the Qt application instance
         app = QApplication(sys.argv)

@@ -17,10 +17,10 @@ import modules.download_video_thread
 
 def extract_video_id(url: str) -> Union[str, None]:
     """
-    Extracts the video ID from a YouTube URL.
+    Extract video ID from a YouTube URL.
 
-    :param url: the YouTube video URL
-    :return: the video ID if found, None otherwise
+    :param url: YouTube video URL.
+    :return: Video ID if found, otherwise None.
     """
     try:
         # Parse the URL into components (scheme, host, path, query, etc.)
@@ -58,18 +58,9 @@ def extract_video_id(url: str) -> Union[str, None]:
 
 class YouTubeWindow(QDialog):
     """
-    YouTubeWindow is a class that loads GUI, downloads audio from YouTube,
-    counts the words in it and displays it.
-
-    YouTubeWindow class performs the following tasks:
-    -loading YouTubeWindow GUI
-    -checking the URL validity in a new thread
-    -checking if the video exists
-    -setting the video title and thumbnail
-    -downloading the audio (yt-dlp)
-    -sending audio file to count word occurrences in a new thread
-    -displaying the results of count
+    Load GUI, download audio from YouTube, count words, and display results.
     """
+
     # GUI element references (populated dynamically by loadUi)
     count_button: QtWidgets.QPushButton
     back_button: QtWidgets.QPushButton
@@ -84,7 +75,7 @@ class YouTubeWindow(QDialog):
         """
         Initialize the YouTubeWindow and load user interface.
 
-        :param widgets: stacked program widgets
+        :param widgets: Stacked program widgets.
         :return: None
         """
         super().__init__()
@@ -106,12 +97,7 @@ class YouTubeWindow(QDialog):
 
     def submit(self) -> None:
         """
-        Submits the process of counting the words in the video.
-
-        Disables the count_button and changes the button text to "Counting...".
-        Resets the window to the default by clearing the words table, title and thumbnail.
-        Starts a new thread for checking the validity of the YouTube URL entered by the user
-        and downloading the video.
+        Start word counting workflow for the given YouTube URL.
 
         :param: None
         :return: None
@@ -136,7 +122,7 @@ class YouTubeWindow(QDialog):
 
     def reset_window_to_default(self) -> None:
         """
-        Clears the words table, thumbnail and title widgets.
+        Reset the title, thumbnail, and words table to defaults.
 
         :param: None
         :return: None
@@ -155,11 +141,9 @@ class YouTubeWindow(QDialog):
 
     def start_checking_url_in_new_thread(self) -> None:
         """
-        Starts a new thread for checking the validity of the YouTube URL entered by the user.
+        Start a new thread to validate the YouTube URL.
 
-        The remaining part of the code is executed in the connected method
-        handle_finished_url_checking() after completing all the operations in the new thread.
-
+        :param: None
         :return: None
         """
         # Create background thread for URL validation
@@ -173,15 +157,10 @@ class YouTubeWindow(QDialog):
 
     def handle_finished_url_checking(self, is_valid: bool) -> Union[None, int]:
         """
-        Handles the finished event of the CheckURLThread, which checks if the given YouTube URL
-        is valid and leads to a video.
+        Handle completion of URL validation thread.
 
-        If the URL is valid and the video exists, sets the title and thumbnail of the video
-        and starts downloading the video in a new thread.
-        If the operation fails, it displays an error message.
-
-        :param is_valid: True if the URL is valid, False otherwise
-        :return: None if no error occurs, 0 otherwise
+        :param is_valid: True if URL is valid, False otherwise.
+        :return: None if valid, 0 if error.
         """
         if is_valid:
             try:
@@ -208,9 +187,9 @@ class YouTubeWindow(QDialog):
 
     def set_video_title(self, yt_url: str) -> None:
         """
-        Retrieves the title of the video and sets it.
+        Retrieve and set the video title.
 
-        :param yt_url: the YouTube video URL
+        :param yt_url: YouTube video URL.
         :return: None
         """
         # Extract video ID from the URL
@@ -241,9 +220,9 @@ class YouTubeWindow(QDialog):
 
     def set_video_thumbnail(self, yt_url: str) -> None:
         """
-        Retrieves the thumbnail of the video and sets it.
+        Retrieve and set the video thumbnail.
 
-        :param yt_url: the YouTube video URL
+        :param yt_url: YouTube video URL.
         :return: None
         """
         try:
@@ -268,12 +247,9 @@ class YouTubeWindow(QDialog):
 
     def start_download_video_in_new_thread(self, yt_url: str) -> None:
         """
-        Starts a new thread for downloading the video from the given YouTube URL.
+        Start a new thread to download video audio.
 
-        The remaining part of the code is executed in the connected method
-        handle_finished_downloading_video() after completing all the operations in the new thread.
-
-        :param yt_url: the YouTube video URL
+        :param yt_url: YouTube video URL.
         :return: None
         """
         # Extract video ID to confirm validity
@@ -301,10 +277,9 @@ class YouTubeWindow(QDialog):
 
     def handle_finished_downloading_video(self, file_path: str) -> None:
         """
-        Handles the finished event of the DownloadVideoThread, which emits the file_path to the audio file.
-        Next starts counting words in this file.
+        Handle completion of video download thread.
 
-        :param file_path: the path to the audio file
+        :param file_path: Path to the downloaded audio file.
         :return: None
         """
         # Save path of the temporary audio file (for later cleanup)
@@ -318,9 +293,9 @@ class YouTubeWindow(QDialog):
 
     def handle_download_failed(self, message: str) -> None:
         """
-        Handles the failed event of the DownloadVideoThread.
+        Handle failure of video download thread.
 
-        :param message: error message
+        :param message: Error message.
         :return: None
         """
         # Log the failure for debugging
@@ -334,13 +309,10 @@ class YouTubeWindow(QDialog):
 
     def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
         """
-        Starts a new thread for counting the words in the given file.
+        Start a new thread for counting words in the audio file.
 
-        The remaining part of the code is executed in the connected method
-        handle_finished_counting_words() after completing all the operations in the new thread.
-
-        :param api_key: the API key for AssemblyAI
-        :param file_path: the path to the audio file
+        :param api_key: API key for AssemblyAI.
+        :param file_path: Path to the audio file.
         :return: None
         """
         # Create worker thread for transcription + word counting
@@ -354,13 +326,10 @@ class YouTubeWindow(QDialog):
 
     def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> Union[None, int]:
         """
-        Handles the finished event of the CountWordsThread, which emits the result of counting words in an audio file.
-        If the result is an error message, displays it on the screen. Otherwise, sets up a table widget
-        with the counted words list and displays it. Finally, removes the temporary file containing the audio,
-        stops the loading animation and changes the text in the count_button to "Count".
+        Handle completion of word counting thread.
 
-        :param counted_words_list: list of tuples with (word, count) or str with error
-        :return: None if no error occurs, 0 otherwise
+        :param counted_words_list: List of (word, count) tuples or error string.
+        :return: None if successful, 0 if error.
         """
         if counted_words_list in ["invalid api key", "file transcription error"]:
             # Show error message to user
@@ -396,9 +365,9 @@ class YouTubeWindow(QDialog):
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """
-        Sets a table widget and displays the counted and sorted words with their counts.
+        Set up the table widget and display counted words.
 
-        :param counted_words_list: list of tuples, each tuple contains a word and its count
+        :param counted_words_list: List of (word, count) tuples.
         :return: None
         """
         # Prepare the table with correct dimensions and headers
@@ -416,9 +385,9 @@ class YouTubeWindow(QDialog):
 
     def set_table(self, counted_words_list: list) -> None:
         """
-        Sets the number of columns and rows in the table, sets column headers, and makes the table elements uneditable.
+        Configure the table with rows, columns, headers, and read-only cells.
 
-        :param counted_words_list: list of tuples, each tuple contains a word and its count
+        :param counted_words_list: List of (word, count) tuples.
         :return: None
         """
         # Set number of rows equal to number of words
@@ -438,7 +407,7 @@ class YouTubeWindow(QDialog):
 
     def start_loading_animation(self) -> None:
         """
-        Starts the loading animation when counting the words.
+        Start the loading animation.
 
         :param: None
         :return: None
@@ -451,7 +420,7 @@ class YouTubeWindow(QDialog):
 
     def stop_loading_animation(self) -> None:
         """
-        Stops the loading animation when the word count is finished.
+        Stop the loading animation.
 
         :param: None
         :return: None
@@ -462,9 +431,9 @@ class YouTubeWindow(QDialog):
 
     def change_count_button_text(self, is_counting: bool) -> None:
         """
-        Changes the text on the count_button depending on the current state of counting.
+        Change the count_button text based on state.
 
-        :param is_counting: True if counting is in progress, False otherwise
+        :param is_counting: True if counting in progress, False otherwise.
         :return: None
         """
         # Toggle button text depending on state
@@ -475,9 +444,9 @@ class YouTubeWindow(QDialog):
 
     def display_error_message(self, error_code: str) -> None:
         """
-        Displays an error message if an error occurs during transcription.
+        Display an error message in the UI.
 
-        :param error_code: error code indicating the type of error
+        :param error_code: Error code string.
         :return: None
         """
         # Map error codes -> human-readable messages

@@ -1,21 +1,19 @@
 import logging
-from urllib.parse import urlparse, parse_qs
-
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
+from urllib.parse import urlparse, parse_qs
 
 
 def extract_video_id(url: str):
     """
-    Extracts the video ID from a YouTube URL.
+    Extract the video ID from a YouTube URL in various formats.
 
-    :param url: the YouTube video URL
-    :return: the video ID if found, None otherwise
+    :param url: YouTube video URL (standard, shorts, embed, or shortened).
+    :return: Video ID string if found, otherwise None.
     """
     try:
         # Split the URL into components (scheme, netloc, path, query, etc.)
         parsed_url = urlparse(url.strip())
-
         # Extract the domain (e.g. 'youtu.be' or 'www.youtube.com'), convert to lowercase
         host = (parsed_url.netloc or "").lower()
 
@@ -52,16 +50,16 @@ def extract_video_id(url: str):
 
 class CheckURLThread(QThread):
     """
-    CheckURLThread is a thread class for checking the validity of a given YouTube URL.
-    It checks if the URL leads to a video on YouTube using oEmbed (without pytube).
+    Worker thread that validates a YouTube URL using the oEmbed API.
     """
+
     finished = pyqtSignal(object)  # A signal emitted when the thread has finished
 
     def __init__(self, yt_url: str) -> None:
         """
-        Initializes the CheckURLThread object.
+        Initialize the validation thread.
 
-        :param yt_url: the YouTube video URL
+        :param yt_url: YouTube video URL to validate.
         :return: None
         """
         super().__init__()
@@ -69,21 +67,19 @@ class CheckURLThread(QThread):
 
     def run(self) -> None:
         """
-        Runs the thread which checks the validity of the YouTube URL and emits the finished signal
-        with the URL validation result.
-        This method overrides the run method in the QThread class.
+        Execute the URL validation and emit the result.
 
         :param: None
         :return: None
         """
-        self.finished.emit(self.is_url_valid())  # type: ignore[attr-defined]  # Qt signal, resolved at runtime
+        self.finished.emit(self.is_url_valid())  # type: ignore[attr-defined] # Qt signal, resolved at runtime
 
     def is_url_valid(self) -> bool:
         """
-        Checks if a given YouTube URL is valid and points to an existing video.
+        Check whether the provided YouTube URL points to an existing video.
 
         :param: None
-        :return: True if the URL is valid, False otherwise
+        :return: True if valid video found, otherwise False.
         """
         try:
             # Extract the video ID from the provided URL (e.g. "dQw4w21WgXcQ")

@@ -20,16 +20,10 @@ import modules.count_words_thread
 
 
 class FileWindow(QDialog):
-    """FileWindow is a class that loads GUI, retrieves mp3 file from user, counts the words in it and displays it.
-
-        FileWindow class performs the following tasks:
-        -loading FileWindow GUI
-        -retrieving file path from user
-        -checking if the file exist
-        -checking if the file is in MP3 format
-        -send audio file to count word occurrences in new thread
-        -displaying the results of count.
     """
+    Load GUI, retrieve MP3 file from user, count words in it, and display results.
+    """
+
     # GUI element references (populated dynamically by loadUi)
     browse_button: QPushButton
     count_button: QPushButton
@@ -44,7 +38,7 @@ class FileWindow(QDialog):
         """
         Initialize the FileWindow and load user interface.
 
-        :param widgets: stacked program widgets
+        :param widgets: Stacked program widgets.
         :return: None
         """
         super().__init__()
@@ -69,8 +63,7 @@ class FileWindow(QDialog):
 
     def choose_file(self) -> None:
         """
-        Opens a file dialog box to allow the user to choose an MP3 file, and sets the file path
-        field with the chosen file.
+        Open a file dialog for selecting an MP3 file and update the path field.
 
         :param: None
         :return: None
@@ -88,14 +81,11 @@ class FileWindow(QDialog):
             self.file_path_field.setText(file_path)
 
     def submit(self) -> Union[None, int]:
-        """Submits the count_button
-
-        Retrieves the chosen file and sends it to the count_words function in the count_words.py
-        to count word occurrences in new thread (by using count.words_thread.py) and after that display the
-        results (words with number of occurrences) on the screen.
+        """
+        Handle count_button click: validate file, start counting, and update UI.
 
         :param: None
-        :return: None if no error occurs, 0 otherwise
+        :return: None if no error occurs, 0 otherwise.
         """
         # Reset GUI elements to a clean state (clear errors, clear results table)
         self.reset_window_to_default()
@@ -137,7 +127,7 @@ class FileWindow(QDialog):
 
     def reset_window_to_default(self) -> None:
         """
-        Clears the words table widget to remove any previous results and reset error text to default.
+        Reset the window: clear results table and reset error message.
 
         :param: None
         :return: None
@@ -154,10 +144,10 @@ class FileWindow(QDialog):
     @staticmethod
     def check_file_existence(file_path: str) -> bool:
         """
-        Checks if a file exists.
+        Check if a file exists.
 
-        :param file_path: the path to the chosen file
-        :return: True if the file exists, False otherwise
+        :param file_path: Path to the chosen file.
+        :return: True if the file exists, False otherwise.
         """
         # Use os.path.exists to validate the file path
         if os.path.exists(file_path):
@@ -168,10 +158,10 @@ class FileWindow(QDialog):
     @staticmethod
     def check_if_file_is_mp3(file_path: str) -> bool:
         """
-        Checks if a file is in MP3 format.
+        Check if a file has .mp3 extension.
 
-        :param file_path: the path to the chosen file
-        :return: True if the file is in MP3 format, False otherwise
+        :param file_path: Path to the chosen file.
+        :return: True if file extension is .mp3, False otherwise.
         """
         # Split file path into (basename, extension)
         _, extension = os.path.splitext(file_path)
@@ -184,7 +174,7 @@ class FileWindow(QDialog):
 
     def start_loading_animation(self) -> None:
         """
-        Starts the loading animation when counting the words.
+        Start the loading animation while counting words.
 
         :param: None
         :return: None
@@ -203,7 +193,7 @@ class FileWindow(QDialog):
 
     def stop_loading_animation(self) -> None:
         """
-        Stops the loading animation when the word count is finished.
+        Stop the loading animation when counting is finished.
 
         :param: None
         :return: None
@@ -216,9 +206,9 @@ class FileWindow(QDialog):
 
     def change_count_button_text(self, is_counting: bool) -> None:
         """
-        Changes the text on the count_button depending on the current state of counting.
+        Update the count_button text depending on state.
 
-        :param is_counting: True if counting is in progress, False otherwise
+        :param is_counting: True if counting is in progress, False otherwise.
         :return: None
         """
         # Show "Counting..." while background thread is active
@@ -230,10 +220,10 @@ class FileWindow(QDialog):
 
     def start_words_counting_in_new_thread(self, api_key: str, file_path: str) -> None:
         """
-        Starts a new thread for counting the words in the given file.
+        Start a new thread for counting words in the given file.
 
-        :param api_key: the API key for AssemblyAI
-        :param file_path: the path to the audio file
+        :param api_key: API key for AssemblyAI.
+        :param file_path: Path to the audio file.
         :return: None
         """
         # Create background thread responsible for transcription + word counting
@@ -247,13 +237,9 @@ class FileWindow(QDialog):
 
     def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> None:
         """
-        Handles the finished event of the CountWordsThread, which emits the result of counting words in an MP3 file.
-        If the result is an error message, displays the error message on the screen. Otherwise, sets up a table widget
-        with the counted words list and displays it on the screen. Finally, stops the loading animation and changes the
-        text in the count_button to "Count".
+        Handle CountWordsThread finished signal and update UI with results.
 
-        :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
-        or message with error (str)
+        :param counted_words_list: Word count list [(word, count)] or error message.
         :return: None
         """
         # Handle known error messages returned by worker thread
@@ -274,9 +260,9 @@ class FileWindow(QDialog):
 
     def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
         """
-        Sets a table widget (by using set_table method) and displays the counted and sorted words with their counts.
+        Set up the table widget and display counted words.
 
-        :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
+        :param counted_words_list: List of (word, count) tuples.
         :return: None
         """
         # Prepare table (set rows, columns, headers, resize mode, disable editing)
@@ -294,10 +280,9 @@ class FileWindow(QDialog):
 
     def set_table(self, counted_words_list: list) -> None:
         """
-        Sets the number of columns and rows in the table, sets column headers, and makes the table elements
-        uneditable (set_table_and_display_counted_words sub-method).
+        Configure table: rows, columns, headers, and read-only settings.
 
-        :param counted_words_list: list of tuples, each tuple contains a word and its count in the form (word, count)
+        :param counted_words_list: List of (word, count) tuples.
         :return: None
         """
         # Set the number of rows to match the number of items in results
@@ -317,9 +302,9 @@ class FileWindow(QDialog):
 
     def display_error_message(self, error_code: str) -> None:
         """
-        Displays an error message if an error occurs during transcription.
+        Display an error message in the UI.
 
-        :param error_code: error code indicating the type of error
+        :param error_code: Error code string.
         :return: None
         """
         # Translate error code into a user-friendly message

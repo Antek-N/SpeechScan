@@ -4,20 +4,16 @@ import requests
 
 
 class TranscribeMP3:
-    """TranscribeMP3 is a class to transcribe audio files in MP3 format.
-
-    The class uses the AssemblyAI API to transcribe the audio file and return the transcribed text.
-    The class can be initialized with the path to the audio file and the API key for AssemblyAI.
-    The main method of the class, on_execute(), returns the transcription text if successful.
-    If there is an error in the transcription process, it returns 1. If the API key check is invalid, it returns 2.
+    """
+    Transcribe audio files in MP3 format using the AssemblyAI API.
     """
 
     def __init__(self, file_path: str, api_key: str) -> None:
         """
-        Initialize the class with the audio file path and API key.
+        Initialize with audio file path and API key.
 
-        :param file_path: The path to the audio file
-        :param api_key: the API key for AssemblyAI
+        :param file_path: Path to the audio file.
+        :param api_key: API key for AssemblyAI.
         :return: None
         """
         self.file_path = file_path
@@ -25,13 +21,13 @@ class TranscribeMP3:
 
     def on_execute(self) -> str:
         """
-        Main method of TranscribeMP3 class.
+        Execute the transcription process.
 
         :param: None
-        :returns:
-        -str, transcription text - If transcription is successful.
-        -str, "file transcription error" - if there is an error in the transcription process.
-        -str, "invalid api key" - if AssemblyAI API key is invalid.
+        :return:
+            - str, transcription text if successful.
+            - str, "file transcription error" if transcription fails.
+            - str, "invalid api key" if API key is invalid.
         """
         # Validate API key before making any requests
         if not self.check_api_key():
@@ -63,10 +59,10 @@ class TranscribeMP3:
 
     def check_api_key(self) -> bool:
         """
-        Check if the API key is valid.
+        Check if the provided API key is valid.
 
         :param: None
-        :return: True if the API key is valid, False otherwise
+        :return: True if the key is valid, False otherwise.
         """
         # Test endpoint for transcript creation
         endpoint = "https://api.assemblyai.com/v2/transcript"
@@ -89,11 +85,11 @@ class TranscribeMP3:
     @staticmethod
     def read_file(file_path: str, chunk_size=5242880) -> bytes:
         """
-        Read a file in chunks and yield the data.
+        Read a file in chunks and yield data.
 
-        :param file_path: the path to the audio file
-        :param chunk_size: the chunk size to read the file in
-        :return: yields the data from audio file in chunks
+        :param file_path: Path to the audio file.
+        :param chunk_size: Chunk size in bytes.
+        :return: File data chunks.
         """
         # Open the audio file in binary mode
         with open(file_path, "rb") as file:
@@ -110,10 +106,10 @@ class TranscribeMP3:
 
     def get_upload_url(self, file_path: str) -> dict:
         """
-        Make a request to the AssemblyAI API to get the upload URL for the audio file.
+        Request upload URL for the audio file.
 
-        :param file_path: the path to the audio file
-        :return: the response from the API containing the upload URL
+        :param file_path: Path to the audio file.
+        :return: API response containing upload URL.
         """
         # Authorization header with API key
         headers = {"authorization": self.api_key}
@@ -130,10 +126,10 @@ class TranscribeMP3:
 
     def submit_processing(self, url: str) -> dict:
         """
-        Make a request to the AssemblyAI API to submit the audio file for processing.
+        Submit the audio file for transcription.
 
-        :param url: the upload URL for the audio file
-        :return: the response from the API containing the transcription ID
+        :param url: Upload URL for the audio file.
+        :return: API response containing transcription ID.
         """
         # Endpoint for submitting audio for transcription
         endpoint = "https://api.assemblyai.com/v2/transcript"
@@ -159,10 +155,10 @@ class TranscribeMP3:
 
     def get_transcription(self, transcription_id: str) -> dict:
         """
-        Get the transcription of the audio file.
+        Get the current transcription result.
 
-        :param transcription_id: the ID of the transcription
-        :return: the response from the API containing the transcribed text
+        :param transcription_id: Transcription job ID.
+        :return: API response with status and text.
         """
         # Build the endpoint URL using the transcription ID
         endpoint = f"https://api.assemblyai.com/v2/transcript/{transcription_id}"
