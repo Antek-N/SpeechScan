@@ -1,6 +1,10 @@
+import logging
+
 from PyQt5.QtCore import QThread, pyqtSignal
 
 import modules.count_words
+
+log = logging.getLogger(__name__)
 
 
 class CountWordsThread(QThread):
@@ -21,6 +25,7 @@ class CountWordsThread(QThread):
         super().__init__()
         self.file_path = file_path
         self.api_key = api_key
+        log.debug("CountWordsThread initialized with file_path=%s", file_path)
 
     def run(self) -> None:
         """
@@ -30,7 +35,14 @@ class CountWordsThread(QThread):
         :param: None
         :return: None
         """
+        log.info("Starting word counting thread for file: %s", self.file_path)
         # count words using the count_words module
         counted_words_list = modules.count_words.CountWords(self.file_path, self.api_key).count_words()
+
+        if isinstance(counted_words_list, str):
+            log.warning("Word counting finished with error: %s", counted_words_list)
+        else:
+            log.info("Word counting finished successfully with %d unique words", len(counted_words_list))
+
         # send the result via signal (word list or error message)
         self.finished.emit(counted_words_list)  # type: ignore[attr-defined]  # Qt signal, resolved at runtime
