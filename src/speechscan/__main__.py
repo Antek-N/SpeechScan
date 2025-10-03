@@ -2,6 +2,7 @@ import logging
 import sys
 
 from speechscan.app import App
+from speechscan.logging_config import configure_logging
 
 
 def main() -> int:
@@ -12,11 +13,7 @@ def main() -> int:
     :return: None
     """
     # Configure logging system
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)],
-    )
+    configure_logging()
     log = logging.getLogger(__name__)
     log.debug("Logging configured")
 
