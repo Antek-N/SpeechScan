@@ -1,13 +1,13 @@
 import logging
+from urllib.parse import parse_qs, urlparse
 
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
-from urllib.parse import urlparse, parse_qs
 
 log = logging.getLogger(__name__)
 
 
-def extract_video_id(url: str):
+def extract_video_id(url: str) -> str | None:
     """
     Extract the video ID from a YouTube URL in various formats.
 
@@ -24,50 +24,50 @@ def extract_video_id(url: str):
         # Handle shortened links like: https://youtu.be/<video_id>
         if host.endswith("youtu.be"):
             # The video ID is in the URL path, e.g. "/dQw4w21WgXcQ"
-            video_id = parsed_url.path.lstrip("/").split("/")[0]
-            if video_id:
-                log.info("Extracted video ID from shortened URL: %s", video_id)
+            video_id_short: str | None = parsed_url.path.lstrip("/").split("/")[0]
+            if video_id_short:
+                log.info("Extracted video ID from shortened URL: %s", video_id_short)
             else:
                 log.warning("No video ID found in shortened URL")
-            return video_id or None
+            return video_id_short or None
 
         # Handle standard YouTube links
         if "youtube.com" in host:
             # 1. Standard format: https://www.youtube.com/watch?v=<video_id>
             if parsed_url.path == "/watch":
                 # The 'v' parameter in the query string contains the video ID
-                video_id = parse_qs(parsed_url.query).get("v", [None])[0]
-                if video_id:
-                    log.info("Extracted video ID from watch URL: %s", video_id)
+                video_id_watch: str | None = parse_qs(parsed_url.query).get("v", [None])[0]
+                if video_id_watch:
+                    log.info("Extracted video ID from watch URL: %s", video_id_watch)
                 else:
                     log.warning("No video ID found in watch URL")
-                return video_id
+                return video_id_watch
 
             # 2. Shorts format: https://www.youtube.com/shorts/<video_id>
             if parsed_url.path.startswith("/shorts/"):
                 parts = parsed_url.path.split("/")
-                video_id = parts[2] if len(parts) > 2 else None
-                if video_id:
-                    log.info("Extracted video ID from shorts URL: %s", video_id)
+                video_id_shorts: str | None = parts[2] if len(parts) > 2 else None
+                if video_id_shorts:
+                    log.info("Extracted video ID from shorts URL: %s", video_id_shorts)
                 else:
                     log.warning("No video ID found in shorts URL")
-                return video_id
+                return video_id_shorts
 
             # 3. Embed format: https://www.youtube.com/embed/<video_id>
             if parsed_url.path.startswith("/embed/"):
                 parts = parsed_url.path.split("/")
-                video_id = parts[2] if len(parts) > 2 else None
-                if video_id:
-                    log.info("Extracted video ID from embed URL: %s", video_id)
+                video_id_embed: str | None = parts[2] if len(parts) > 2 else None
+                if video_id_embed:
+                    log.info("Extracted video ID from embed URL: %s", video_id_embed)
                 else:
                     log.warning("No video ID found in embed URL")
-                return video_id
+                return video_id_embed
 
         # If no format matches - no recognized ID
         log.warning("Unrecognized YouTube URL format: %s", url)
         return None
 
-    # Handle potential exceptions (e.g. malformed URL)
+    # Handle potential exceptions (e.g., malformed URL)
     except (ValueError, IndexError, KeyError, AttributeError) as e:
         log.error("Error extracting video ID from URL=%s | %s", url, e)
         return None
@@ -95,7 +95,6 @@ class CheckURLThread(QThread):
         """
         Execute the URL validation and emit the result.
 
-        :param: None
         :return: None
         """
         log.info("Starting validation for URL: %s", self.yt_url)
@@ -106,7 +105,6 @@ class CheckURLThread(QThread):
         """
         Check whether the provided YouTube URL points to an existing video.
 
-        :param: None
         :return: True if valid video found, otherwise False.
         """
         try:
@@ -141,7 +139,7 @@ class CheckURLThread(QThread):
                 return False
 
         except Exception as ex:
-            # If an error occurred (e.g. no internet, timeout, invalid link)
+            # If an error occurred (e.g., no internet, timeout, invalid link)
             # log a warning and assume the URL is invalid
             log.error("Exception while validating URL=%s | %s", self.yt_url, ex)
             return False

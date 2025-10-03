@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Generator
 
 import requests
 
@@ -12,7 +13,7 @@ class TranscribeMP3:
 
     def __init__(self, file_path: str, api_key: str) -> None:
         """
-        Initialize with audio file path and API key.
+        Initialize with the audio file path and API key.
 
         :param file_path: Path to the audio file.
         :param api_key: API key for AssemblyAI.
@@ -26,11 +27,10 @@ class TranscribeMP3:
         """
         Execute the transcription process.
 
-        :param: None
         :return:
-            - str, transcription text if successful.
-            - str, "file transcription error" if transcription fails.
-            - str, "invalid api key" if API key is invalid.
+            - Str, transcription text if successful.
+            - Str, "file transcription error" if transcription fails.
+            - Str, "invalid api key" if the API key is invalid.
         """
         # Validate API key before making any requests
         if not self.check_api_key():
@@ -73,16 +73,13 @@ class TranscribeMP3:
         """
         Check if the provided API key is valid.
 
-        :param: None
         :return: True if the key is valid, False otherwise.
         """
         # Test endpoint for transcript creation
         endpoint = "https://api.assemblyai.com/v2/transcript"
 
-        # Authorization header with provided API key
-        headers = {
-            "Authorization": "Token " + self.api_key
-        }
+        # Authorization header with provided the API key
+        headers = {"Authorization": "Token " + self.api_key}
 
         # Send a simple GET request to check authentication
         response = requests.get(endpoint, headers=headers)
@@ -96,7 +93,7 @@ class TranscribeMP3:
             return True
 
     @staticmethod
-    def read_file(file_path: str, chunk_size=5242880) -> bytes:
+    def read_file(file_path: str, chunk_size: int = 5242880) -> Generator[bytes, None, None]:
         """
         Read a file in chunks and yield data.
 
@@ -111,7 +108,7 @@ class TranscribeMP3:
                 # Read file in chunks (default 5 MB)
                 data = file.read(chunk_size)
 
-                # If end of file reached -> stop loop
+                # If the end of file reached -> stop loop
                 if not data:
                     break
 
@@ -126,7 +123,7 @@ class TranscribeMP3:
         :return: API response containing upload URL.
         """
         log.debug("Requesting upload URL for file: %s", file_path)
-        # Authorization header with API key
+        # Authorization header with the API key
         headers = {"authorization": self.api_key}
 
         # Upload the audio file in streaming chunks to AssemblyAI
@@ -152,11 +149,7 @@ class TranscribeMP3:
         endpoint = "https://api.assemblyai.com/v2/transcript"
 
         # Request payload -> provide audio URL and enable extra features
-        json = {
-            "audio_url": url,
-            "content_safety": True,
-            "language_detection": True
-        }
+        json = {"audio_url": url, "content_safety": True, "language_detection": True}
 
         # Headers for authorization and JSON body
         headers = {
@@ -182,7 +175,7 @@ class TranscribeMP3:
         # Build the endpoint URL using the transcription ID
         endpoint = f"https://api.assemblyai.com/v2/transcript/{transcription_id}"
 
-        # Authorization header with API key
+        # Authorization header with the API key
         headers = {
             "authorization": self.api_key,
         }
