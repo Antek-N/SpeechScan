@@ -1,23 +1,26 @@
 import logging
 import os
 import urllib.request
-from typing import Union
 from urllib.parse import parse_qs, urlparse
 
 import requests
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QMovie, QPixmap
-from PyQt5.QtWidgets import QAbstractItemView, QDialog, QHeaderView
+from PyQt5.QtWidgets import QAbstractItemView, QDialog, QHeaderView, QStackedWidget
 from PyQt5.uic import loadUi  # type: ignore[import]
 
-import modules.check_url_thread
-import modules.count_words_thread
-import modules.download_video_thread
+from speechscan.threads.check_url_thread import CheckURLThread
+from speechscan.threads.count_words_thread import CountWordsThread
+from speechscan.threads.download_video_thread import DownloadVideoThread
+from speechscan.utils.paths import base_dir
 
 log = logging.getLogger(__name__)
 
+UI_DIR = base_dir() / "ui" / "views"  # ui/views directory
+ASSETS_DIR = base_dir() / "assets"  # assets directory
 
-def extract_video_id(url: str) -> Union[str, None]:
+
+def extract_video_id(url: str) -> str | None:
     """
     Extract video ID from a YouTube URL.
 
@@ -83,7 +86,13 @@ class YouTubeWindow(QDialog):
     api_key_field: QtWidgets.QLineEdit
     loading_widget: QtWidgets.QLabel
 
-    def __init__(self, widgets):
+    download_video_thread: DownloadVideoThread | None
+    count_thread: CountWordsThread | None
+    check_url_thread: CheckURLThread | None
+    temporary_file_path: str
+    yt_url: str
+
+    def __init__(self, widgets: QStackedWidget) -> None:
         """
         Initialize the YouTubeWindow and load user interface.
 
@@ -92,17 +101,17 @@ class YouTubeWindow(QDialog):
         """
         super().__init__()
         # Load UI definition from Qt Designer .ui file
-        loadUi("views/youtube_window.ui", self)
-        log.debug("UI loaded from views/youtube_window.ui")
+        loadUi(str(UI_DIR / "youtube_window.ui"), self)
+        log.debug("UI loaded from %s", UI_DIR / "youtube_window.ui")
 
         # Connect "Count" button -> start submission process
         self.count_button.clicked.connect(self.submit)  # type: ignore[attr-defined]
 
-        # Connect "Back" button -> return to start window (index 0 in stacked widgets)
+        # Connect "Back" button -> return to the start window (index 0 in stacked widgets)
         self.back_button.clicked.connect(lambda: widgets.setCurrentIndex(0))  # type: ignore[attr-defined]
 
         # Initialize attributes used later during video download and transcription
-        self.temporary_file_path = ""  # will hold temporary audio file path
+        self.temporary_file_path = ""  # will hold the temporary audio file path
         self.yt_url = ""  # will hold YouTube URL entered by user
         self.download_video_thread = None  # thread for downloading audio
         self.count_thread = None  # thread for counting words
@@ -113,7 +122,6 @@ class YouTubeWindow(QDialog):
         """
         Start word counting workflow for the given YouTube URL.
 
-        :param: None
         :return: None
         """
         # Disable the count button to prevent multiple clicks
@@ -138,9 +146,8 @@ class YouTubeWindow(QDialog):
 
     def reset_window_to_default(self) -> None:
         """
-        Reset the title, thumbnail, and words table to defaults.
+        Reset the title, thumbnail, and words' table to default.
 
-        :param: None
         :return: None
         """
         # Reset title label to default gray style and placeholder text
@@ -152,7 +159,7 @@ class YouTubeWindow(QDialog):
         self.icon_widget.clear()
         log.debug("reset_window_to_default: thumbnail cleared")
 
-        # Clear results table (remove headers, rows and data)
+        # Clear results table (remove headers, rows, and data)
         self.words_table_widget.clear()
         self.words_table_widget.setRowCount(0)
         self.words_table_widget.setColumnCount(0)
@@ -162,21 +169,16 @@ class YouTubeWindow(QDialog):
         """
         Start a new thread to validate the YouTube URL.
 
-        :param: None
         :return: None
         """
-        # Create background thread for URL validation
-        self.check_url_thread = modules.check_url_thread.CheckURLThread(self.yt_url)
-
-        # Connect thread's finished signal -> callback handler
-        self.check_url_thread.finished.connect(self.handle_finished_url_checking)
+        thread = CheckURLThread(self.yt_url)
+        self.check_url_thread = thread
+        thread.finished.connect(self.handle_finished_url_checking)
         log.debug("start_checking_url_in_new_thread: signal connected")
-
-        # Start the thread (runs asynchronously)
-        self.check_url_thread.start()
+        thread.start()
         log.info("start_checking_url_in_new_thread: started")
 
-    def handle_finished_url_checking(self, is_valid: bool) -> Union[None, int]:
+    def handle_finished_url_checking(self, is_valid: bool) -> None | int:
         """
         Handle completion of URL validation thread.
 
@@ -208,6 +210,7 @@ class YouTubeWindow(QDialog):
             self.count_button.setEnabled(True)
             log.warning("handle_finished_url_checking: invalid URL")
             return 0
+        return None
 
     def set_video_title(self, yt_url: str) -> None:
         """
@@ -259,7 +262,7 @@ class YouTubeWindow(QDialog):
                 log.warning("set_video_thumbnail: cannot extract video ID")
                 return
 
-            # Build thumbnail URL and download it temporarily
+            # Build a thumbnail URL and download it temporarily
             thumb_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
             thumbnail = urllib.request.urlretrieve(thumb_url)
 
@@ -298,15 +301,16 @@ class YouTubeWindow(QDialog):
         video_url = f"https://www.youtube.com/watch?v={video_id}"
 
         # Create worker thread for video download
-        self.download_video_thread = modules.download_video_thread.DownloadVideoThread(video_url)
+        thread = DownloadVideoThread(video_url)
+        self.download_video_thread = thread
 
         # Connect thread signals -> success and failure handlers
-        self.download_video_thread.finished.connect(self.handle_finished_downloading_video)
-        self.download_video_thread.failed.connect(self.handle_download_failed)
+        thread.finished.connect(self.handle_finished_downloading_video)
+        thread.failed.connect(self.handle_download_failed)
         log.debug("start_download_video_in_new_thread: signals connected")
 
         # Start the thread
-        self.download_video_thread.start()
+        thread.start()
         log.info("start_download_video_in_new_thread: started")
 
     def handle_finished_downloading_video(self, file_path: str) -> None:
@@ -352,17 +356,18 @@ class YouTubeWindow(QDialog):
         :return: None
         """
         # Create worker thread for transcription + word counting
-        self.count_thread = modules.count_words_thread.CountWordsThread(file_path, api_key)
+        thread = CountWordsThread(file_path, api_key)
+        self.count_thread = thread
 
         # Connect thread's finished signal -> callback handler
-        self.count_thread.finished.connect(self.handle_finished_counting_words)
+        thread.finished.connect(self.handle_finished_counting_words)
         log.debug("start_words_counting_in_new_thread: signal connected")
 
         # Start the thread asynchronously
-        self.count_thread.start()
+        thread.start()
         log.info("start_words_counting_in_new_thread: started")
 
-    def handle_finished_counting_words(self, counted_words_list: Union[list, str]) -> Union[None, int]:
+    def handle_finished_counting_words(self, counted_words_list: list[tuple[str, int]] | str) -> None | int:
         """
         Handle completion of word counting thread.
 
@@ -370,8 +375,11 @@ class YouTubeWindow(QDialog):
         :return: None if successful, 0 if error.
         """
         log.info("handle_finished_counting_words: result type=%s", type(counted_words_list).__name__)
-        if counted_words_list in ["invalid api key", "file transcription error"]:
-            # Show error message to user
+        if isinstance(counted_words_list, str) and counted_words_list in [
+            "invalid api key",
+            "file transcription error",
+        ]:
+            # Show the error message to user
             self.display_error_message(counted_words_list)
 
             # Reset UI state
@@ -388,9 +396,10 @@ class YouTubeWindow(QDialog):
                 log.error("handle_finished_counting_words: failed to remove temp file: %s", ex)
             return 0
         else:
-            # Display counted words in table
-            self.set_table_and_display_counted_words(counted_words_list)
-            log.info("handle_finished_counting_words: displayed %d rows", len(counted_words_list))
+            if isinstance(counted_words_list, list):
+                # Display counted words in table
+                self.set_table_and_display_counted_words(counted_words_list)
+                log.info("handle_finished_counting_words: displayed %d rows", len(counted_words_list))
 
         # Restore button state
         self.change_count_button_text(False)
@@ -407,8 +416,9 @@ class YouTubeWindow(QDialog):
         except Exception as ex:
             logging.warning(ex)
             log.error("handle_finished_counting_words: failed to remove temp file: %s", ex)
+        return None
 
-    def set_table_and_display_counted_words(self, counted_words_list: list) -> None:
+    def set_table_and_display_counted_words(self, counted_words_list: list[tuple[str, int]]) -> None:
         """
         Set up the table widget and display counted words.
 
@@ -429,14 +439,14 @@ class YouTubeWindow(QDialog):
             self.words_table_widget.setItem(i, 1, item)
         log.info("set_table_and_display_counted_words: table populated with %d rows", len(counted_words_list))
 
-    def set_table(self, counted_words_list: list) -> None:
+    def set_table(self, counted_words_list: list[tuple[str, int]]) -> None:
         """
         Configure the table with rows, columns, headers, and read-only cells.
 
         :param counted_words_list: List of (word, count) tuples.
         :return: None
         """
-        # Set number of rows equal to number of words
+        # Set the number of rows equal to the number of words
         self.words_table_widget.setRowCount(len(counted_words_list))
 
         # Always 2 columns: word and count
@@ -456,11 +466,10 @@ class YouTubeWindow(QDialog):
         """
         Start the loading animation.
 
-        :param: None
         :return: None
         """
         # Load and start animated GIF for "loading" indicator
-        loading_movie = QMovie("img/loading.gif")
+        loading_movie = QMovie(str(ASSETS_DIR / "img" / "loading.gif"))
         self.loading_widget.setMovie(loading_movie)
         self.loading_widget.setScaledContents(True)
         loading_movie.start()
@@ -470,7 +479,6 @@ class YouTubeWindow(QDialog):
         """
         Stop the loading animation.
 
-        :param: None
         :return: None
         """
         # Stop the GIF animation and clear the widget

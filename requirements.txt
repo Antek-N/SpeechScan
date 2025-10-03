@@ -1,3 +1,9 @@
-PyQt5==5.15.7
-requests==2.32.3
-yt-dlp==2025.9.5
+certifi==2025.8.3 ; python_version >= "3.12" and python_version < "3.15"
+charset-normalizer==3.4.3 ; python_version >= "3.12" and python_version < "3.15"
+idna==3.10 ; python_version >= "3.12" and python_version < "3.15"
+pyqt5-qt5==5.15.17 ; python_version >= "3.12" and python_version < "3.15" and sys_platform == "windows"
+pyqt5-sip==12.17.0 ; python_version >= "3.12" and python_version < "3.15" and sys_platform == "windows"
+pyqt5==5.15.11 ; python_version >= "3.12" and python_version < "3.15" and sys_platform == "windows"
+requests==2.32.3 ; python_version >= "3.12" and python_version < "3.15"
+urllib3==2.5.0 ; python_version >= "3.12" and python_version < "3.15"
+yt-dlp==2025.9.26 ; python_version >= "3.12" and python_version < "3.15"

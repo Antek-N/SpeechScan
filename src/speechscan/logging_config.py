@@ -41,29 +41,25 @@ Important:
 - Colors: `FORCE_COLOR=1` enforces colors, `NO_COLOR=1` disables them
   (set as environment variables before running the program).
 """
+
 import logging
 import os
 import sys
 import time
 from dataclasses import dataclass
-from typing import IO, Optional
+from typing import IO
 
 __all__ = ["configure_logging", "add_file_logging"]
 
 
-# mapping of logging levels to ANSI codes (terminal colors)
-# RESET is needed so that after each message the default color is restored
 COLORS = {
-    "DEBUG": "\033[90m",  # gray
-    "INFO": "\033[32m",  # green
-    "WARNING": "\033[93m",  # yellow
-    "ERROR": "\033[91m",  # red
-    "CRITICAL": "\033[97;41m",  # white text on red background
-    "RESET": "\033[0m",  # reset to default terminal color
+    "DEBUG": "\033[90m",
+    "INFO": "\033[32m",
+    "WARNING": "\033[93m",
+    "ERROR": "\033[91m",
+    "CRITICAL": "\033[97;41m",
+    "RESET": "\033[0m",
 }
-
-
-# ------------------------ Layer: environment/color detection ------------------------
 
 
 @dataclass(frozen=True)
@@ -76,9 +72,10 @@ class ColorSupport:
         reason (Optional[str]): Explanation why colors are not supported (if applicable).
         env_hint (Optional[str]): Environment hint to provide user-specific tips (e.g. 'vscode', 'pycharm').
     """
+
     supported: bool
-    reason: Optional[str] = None
-    env_hint: Optional[str] = None
+    reason: str | None = None
+    env_hint: str | None = None
 
 
 class ColorEnv:
@@ -86,8 +83,9 @@ class ColorEnv:
     Detects environment characteristics related to color/ANSI support
     and provides methods to enable or disable ANSI colors in different terminals.
     """
-    _WINDOWS_ANSI_ENABLED = False  # flag: whether ANSI support was enabled on Windows (via colorama)
-    _COLOR_HINT_SHOWN = False  # flag: so that color hint is shown only once
+
+    _WINDOWS_ANSI_ENABLED = False
+    _COLOR_HINT_SHOWN = False
 
     @staticmethod
     def is_ci() -> bool:
@@ -96,22 +94,19 @@ class ColorEnv:
 
         :return: True if running in a known CI system, False otherwise.
         """
-        return (
-            os.environ.get("CI") == "1"  # compatibility with tools that set CI=1
-            or any(
-                os.environ.get(env_var)
-                for env_var in (
-                    "GITHUB_ACTIONS",
-                    "GITLAB_CI",
-                    "TF_BUILD",
-                    "TEAMCITY_VERSION",
-                    "BUILDKITE",
-                    "TRAVIS",
-                    "CIRCLECI",
-                    "APPVEYOR",
-                    "DRONE",
-                    "JENKINS_URL",
-                )  # list of the most common CI environment variables
+        return os.environ.get("CI") == "1" or any(
+            os.environ.get(env_var)
+            for env_var in (
+                "GITHUB_ACTIONS",
+                "GITLAB_CI",
+                "TF_BUILD",
+                "TEAMCITY_VERSION",
+                "BUILDKITE",
+                "TRAVIS",
+                "CIRCLECI",
+                "APPVEYOR",
+                "DRONE",
+                "JENKINS_URL",
             )
         )
 
@@ -122,10 +117,7 @@ class ColorEnv:
 
         :return: True if running in VS Code, False otherwise.
         """
-        return bool(
-            os.environ.get("TERM_PROGRAM") == "vscode"  # VS Code Integrated Terminal sets TERM_PROGRAM=vscode
-            or os.environ.get("VSCODE_PID")  # debug/run without terminal may only have VSCODE_PID
-        )
+        return bool(os.environ.get("TERM_PROGRAM") == "vscode" or os.environ.get("VSCODE_PID"))
 
     @staticmethod
     def is_pycharm() -> bool:
@@ -134,9 +126,7 @@ class ColorEnv:
 
         :return: True if running in PyCharm, False otherwise.
         """
-        return bool(
-            os.environ.get("PYCHARM_HOSTED")
-        )  # PyCharm sets PYCHARM_HOSTED when process is run “inside” IDE
+        return bool(os.environ.get("PYCHARM_HOSTED"))
 
     @staticmethod
     def is_windows_terminal() -> bool:
@@ -145,10 +135,7 @@ class ColorEnv:
 
         :return: True if running in Windows Terminal or ConEmu, False otherwise.
         """
-        return bool(
-            os.environ.get("WT_SESSION")  # Windows Terminal sets WT_SESSION — supports ANSI
-            or os.environ.get("ConEmuPID")  # ConEmu/CMder can emulate colors, so we also treat them as supported
-        )
+        return bool(os.environ.get("WT_SESSION") or os.environ.get("ConEmuPID"))
 
     @staticmethod
     def is_jupyter() -> bool:
@@ -158,10 +145,11 @@ class ColorEnv:
         :return: True if in Jupyter, False otherwise.
         """
         try:
-            import ipykernel  # noqa: F401  # presence of ipykernel means we are in Jupyter/spyder-kernel – colors usually work
-            return True  # if import succeeds, signal support
+            import ipykernel  # noqa: F401
+
+            return True
         except ImportError:
-            return False  # no ipykernel > not Jupyter
+            return False
 
     @classmethod
     def ensure_windows_ansi(cls) -> None:
@@ -171,19 +159,16 @@ class ColorEnv:
 
         :return: None
         """
-        # If ANSI is already enabled, or we are not on Windows — do nothing
         if cls._WINDOWS_ANSI_ENABLED or os.name != "nt":
             return
 
         try:
-            # Try importing colorama library (required on Windows)
-            import colorama  # type: ignore
+            import colorama  # noqa E402
         except ImportError:
-            # If colorama not available — exit
             return
 
-        colorama.just_fix_windows_console()  # Fix Windows console so it supports ANSI codes
-        cls._WINDOWS_ANSI_ENABLED = True  # Internal flag — mark as already configured
+        colorama.just_fix_windows_console()
+        cls._WINDOWS_ANSI_ENABLED = True
 
     @staticmethod
     def stream_isatty(stream: IO[str]) -> bool:
@@ -194,12 +179,8 @@ class ColorEnv:
         :return: True if the stream is a TTY, False otherwise.
         """
         try:
-            # Checks if `stream` object has `isatty` method
-            # and whether it is callable, then returns its result.
-            # `isatty()` -> True means the stream is a terminal (not e.g. file/pipe).
             return hasattr(stream, "isatty") and callable(stream.isatty) and stream.isatty()
         except (OSError, ValueError):
-            # In case of errors (e.g. no access to terminal, closed stream) return False
             return False
 
     @classmethod
@@ -211,38 +192,30 @@ class ColorEnv:
         :param stream: The output stream (e.g. sys.stderr).
         :return: A ColorSupport instance with the decision and explanation.
         """
-        # If FORCE_COLOR is set -> always enforce colors
         if os.environ.get("FORCE_COLOR"):
             cls.ensure_windows_ansi()
             return ColorSupport(True)
 
-        # If NO_COLOR is set -> completely disable colors
         if os.environ.get("NO_COLOR"):
             return ColorSupport(False, "NO_COLOR is set.", None)
 
-        # Special environment: PyCharm
         if cls.is_pycharm():
             cls.ensure_windows_ansi()
             return ColorSupport(True, env_hint="pycharm")
 
-        # Special environment: VS Code
         if cls.is_vscode():
             cls.ensure_windows_ansi()
             return ColorSupport(True, env_hint="vscode")
 
-        # Windows Terminal or ConEmu -> try to enable ANSI
         if cls.is_windows_terminal():
             cls.ensure_windows_ansi()
 
-        # In Jupyter environment we support colors by default
         if cls.is_jupyter():
             return ColorSupport(True, env_hint="jupyter")
 
-        # If output is not a TTY (e.g. file, pipe, IDE without emulation) -> colors disabled
         if not cls.stream_isatty(stream):
             return ColorSupport(False, "Output is not a TTY (file/pipe/IDE wo/ emulation).", None)
 
-        # Windows handling: if we have colorama -> OK, if not -> no support
         if os.name == "nt":
             cls.ensure_windows_ansi()
             return (
@@ -251,17 +224,14 @@ class ColorEnv:
                 else ColorSupport(False, "Windows without 'colorama'.", "windows")
             )
 
-        # On Unix systems check TERM variable
         terminal_type = os.environ.get("TERM", "")
         if terminal_type in ("", "dumb"):
-            # Empty TERM or "dumb" means no ANSI support
             return ColorSupport(False, f"TERM={terminal_type!r} does not support ANSI.", "unix")
 
-        # In other cases assume colors are supported
         return ColorSupport(True)
 
     @classmethod
-    def maybe_show_color_hint(cls, reason: Optional[str], env_hint: Optional[str]) -> None:
+    def maybe_show_color_hint(cls, reason: str | None, env_hint: str | None) -> None:
         """
         Optionally prints a hint to stderr explaining why colors are disabled
         and how to enable them, depending on the environment.
@@ -270,28 +240,20 @@ class ColorEnv:
         :param env_hint: Environment hint (if available).
         :return: None
         """
-        # Conditions when hint should not be shown:
-        # - already shown (_COLOR_HINT_SHOWN),
-        # - running in CI environment (where hints are useless),
-        # - user did not enable hints (LOG_COLOR_HINT != "1").
         if cls._COLOR_HINT_SHOWN or cls.is_ci() or os.environ.get("LOG_COLOR_HINT") != "1":
             return
 
-        # If no reason (reason=None), then no sense to show hint
         if not reason:
             return
 
-        # Mark that hint was already shown — only once per process
         cls._COLOR_HINT_SHOWN = True
 
-        # General tips independent of environment
         base_tips = [
             "- If redirecting to a file/pipeline: colors are intentionally disabled.",
             "- Remove the `NO_COLOR` variable if it's set.",
             "- You can force colors: `FORCE_COLOR=1`.",
         ]
 
-        # Additional, environment-specific tips depending on detected env
         env_tips = {
             "pycharm": ["- PyCharm: enable **Run → Emulate terminal in output console**."],
             "vscode": [
@@ -311,32 +273,31 @@ class ColorEnv:
             ],
         }
 
-        # Pick tips list depending on env_hint (or default None)
         tips = env_tips.get(env_hint, env_tips[None])
 
-        # Build final message — reason for disabling and tips how to enable colors
         message = (
             "[log-color] Colors are disabled: "
-            f"{reason}  How to enable them:\n  " + "\n  ".join(tips + base_tips)
+            f"{reason}  How to enable them:\n  "
+            + "\n  ".join(tips + base_tips)
             + "\n  (Silence tips: LOG_COLOR_HINT=0 / off by default)"
         )
 
         try:
-            # Print message to stderr
             print(message, file=sys.stderr)
         except (OSError, ValueError):
-            # If stderr not available -> ignore error
             pass
-
-
-# ----------------------------- Layer: formatters/handlers -----------------------------
 
 
 class UtcFormatter(logging.Formatter):
     """
     Formatter that enforces UTC timestamps for log records.
     """
-    converter = time.gmtime
+
+    @staticmethod
+    def _converter(secs: float | None) -> time.struct_time:
+        return time.gmtime(0 if secs is None else secs)
+
+    converter = _converter
 
 
 class ColoredFormatter(UtcFormatter):
@@ -345,29 +306,18 @@ class ColoredFormatter(UtcFormatter):
 
     Extends UtcFormatter to add colorization when enabled.
     """
-    def __init__(self, format_string: str, date_format: Optional[str], use_color: bool) -> None:
-        # Inherits from UtcFormatter and additionally handles colors
+
+    def __init__(self, format_string: str, date_format: str | None, use_color: bool) -> None:
         super().__init__(fmt=format_string, datefmt=date_format)
-        self.use_color = use_color  # flag, whether to use colors
+        self.use_color = use_color
 
     def format(self, record: logging.LogRecord) -> str:
-        """
-        Formats a log record, optionally adding ANSI color sequences.
-
-        :param record: The log record to format.
-        :return: The formatted log message string.
-        """
-        # First, format normally
         message = super().format(record)
 
         if not self.use_color:
-            # If colors disabled -> return plain text
             return message
 
-        # Pick color based on log level
         color = COLORS.get(record.levelname, COLORS["RESET"])
-
-        # Add ANSI sequence before and reset after message
         return f"{color}{message}{COLORS['RESET']}"
 
 
@@ -376,54 +326,26 @@ class HandlerFactory:
     Factory for creating logging handlers with appropriate formatters
     (stream handlers with optional colors, or file handlers without colors).
     """
+
     @staticmethod
     def stream_handler(stream: IO[str], fmt: str, date_format: str) -> logging.Handler:
-        """
-        Creates a logging.StreamHandler with color support if available.
-
-        :param stream: The target output stream.
-        :param fmt: Log message format string.
-        :param date_format: Date/time format string.
-        :return: Configured logging handler.
-        """
-        # Creates handler for logging to given stream (e.g. stderr)
         handler = logging.StreamHandler(stream)
-        handler.setLevel(logging.NOTSET)  # allows all levels to pass
+        handler.setLevel(logging.NOTSET)
 
-        # Check if colors can be used in this stream
         support = ColorEnv.color_support_with_reason(stream)
         if not support.supported:
-            # If colors unavailable -> maybe show hint
             ColorEnv.maybe_show_color_hint(support.reason, support.env_hint)
 
-        # Set formatter: colored if environment supports
-        handler.setFormatter(
-            ColoredFormatter(format_string=fmt, date_format=date_format, use_color=support.supported)
-        )
+        handler.setFormatter(ColoredFormatter(format_string=fmt, date_format=date_format, use_color=support.supported))
         return handler
 
     @staticmethod
     def file_handler(path: str, fmt: str, date_format: str, encoding: str = "utf-8") -> logging.Handler:
-        """
-        Creates a logging.FileHandler that writes logs to a file using UTC timestamps.
-
-        :param path: Path to the log file.
-        :param fmt: Log message format string.
-        :param date_format: Date/time format string.
-        :param encoding: File encoding (default UTF-8).
-        :return: Configured logging handler.
-        """
-        # Creates handler for logging to file (without colors)
         absolute_path = os.path.abspath(path)
         handler = logging.FileHandler(absolute_path, encoding=encoding)
         handler.setLevel(logging.NOTSET)
-
-        # Use formatter with UTC time (no colors, since file)
         handler.setFormatter(UtcFormatter(fmt=fmt, datefmt=date_format))
         return handler
-
-
-# ------------------------------ Layer: configuration ---------------------------------
 
 
 class LoggingConfigurator:
@@ -431,6 +353,7 @@ class LoggingConfigurator:
     Provides high-level configuration methods for setting up logging
     with optional color support for console and file handlers.
     """
+
     @staticmethod
     def configure(
         level: int = logging.DEBUG,
@@ -452,35 +375,24 @@ class LoggingConfigurator:
         :param capture_warnings: If True, redirects warnings to logging.
         :return: None
         """
-        root = logging.getLogger()  # main application logger
+        root = logging.getLogger()
 
         if replace_handlers:
-            # replace_handlers=True -> start with clean config (no old handlers/flags)
             for handler in root.handlers[:]:
                 root.removeHandler(handler)
-
-            # Clear flag that configuration was already set
             if hasattr(root, "_colored_logging_configured"):
                 delattr(root, "_colored_logging_configured")
 
-        # If logger already configured and replace_handlers not forced
         if getattr(root, "_colored_logging_configured", False) and not replace_handlers:
             if capture_warnings:
-                # capture standard warnings and direct them to logs
                 logging.captureWarnings(True)
-            return  # done, change nothing more
+            return
 
-        # Set global logging level
         root.setLevel(level)
-
-        # Add stream handler (e.g. stderr) with formatter
         root.addHandler(HandlerFactory.stream_handler(stream, format_string, date_format))
-
-        # Flag — mark that configuration was done
         root._colored_logging_configured = True  # type: ignore[attr-defined]
 
         if capture_warnings:
-            # capture standard warnings and direct them to logs
             logging.captureWarnings(True)
 
     @staticmethod
@@ -501,28 +413,19 @@ class LoggingConfigurator:
         :param encoding: File encoding (default UTF-8).
         :return: None
         """
-        root = logging.getLogger()  # main application logger
-        absolute_path = os.path.abspath(path)  # file path
+        root = logging.getLogger()
+        absolute_path = os.path.abspath(path)
 
-        # check if logger already has handler for the same file
         for handler in root.handlers:
             if isinstance(handler, logging.FileHandler) and getattr(handler, "baseFilename", None) == absolute_path:
-                # if file already attached, possibly raise logging level
                 if root.level > level:
                     root.setLevel(level)
-                return  # do not add another handler
+                return
 
-        # add new file handler with UTC formatter
-        root.addHandler(
-            HandlerFactory.file_handler(absolute_path, format_string, date_format, encoding)
-        )
+        root.addHandler(HandlerFactory.file_handler(absolute_path, format_string, date_format, encoding))
 
-        # ensure global logging level is not higher than given
         if root.level > level:
             root.setLevel(level)
-
-
-# -------------------------------------- API ------------------------------------------
 
 
 def configure_logging(

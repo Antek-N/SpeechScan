@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtCore import QThread, pyqtSignal
 
-import modules.count_words
+from speechscan.services.text.count_words import CountWords
 
 log = logging.getLogger(__name__)
 
@@ -32,12 +32,11 @@ class CountWordsThread(QThread):
         Run the thread: count words in the .mp3 file using CountWords,
         then emit the finished signal with results or error message.
 
-        :param: None
         :return: None
         """
         log.info("Starting word counting thread for file: %s", self.file_path)
         # count words using the count_words module
-        counted_words_list = modules.count_words.CountWords(self.file_path, self.api_key).count_words()
+        counted_words_list = CountWords(self.file_path, self.api_key).count_words()
 
         if isinstance(counted_words_list, str):
             log.warning("Word counting finished with error: %s", counted_words_list)

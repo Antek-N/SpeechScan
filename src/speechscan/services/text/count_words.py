@@ -1,9 +1,8 @@
 import logging
 import string
 from collections import Counter
-from typing import Union
 
-import modules.transcribe_audio
+from speechscan.services.transcription.transcribe_audio import TranscribeMP3
 
 log = logging.getLogger(__name__)
 
@@ -25,21 +24,23 @@ class CountWords:
         self.api_key = api_key
         log.debug("CountWords initialized with file_path=%s", file_path)
 
-    def count_words(self) -> Union[list, str]:
+    def count_words(self) -> list[tuple[str, int]] | str:
         """
         Count word occurrences in the given audio file.
 
-        :param: None
         :return:
-            - list of (word, count) tuples if transcription is successful.
-            - str "file transcription error" if transcription fails.
-            - str "invalid api key" if the AssemblyAI API key is invalid.
+            - List of (word, count) tuples if transcription is successful.
+            - Str "file transcription error" if transcription fails.
+            - Str "invalid api key" if the AssemblyAI API key is invalid.
         """
         log.info("Starting word count for file: %s", self.file_path)
 
         # 1. Get the transcription of the audio file (text)
         transcription_text = self.get_transcription()
-        log.debug("Transcription result: %s", transcription_text[:50] + "..." if isinstance(transcription_text, str) else transcription_text)
+        log.debug(
+            "Transcription result: %s",
+            transcription_text[:50] + "..." if isinstance(transcription_text, str) else transcription_text,
+        )
 
         # 2. If transcription failed or the API key is invalid, return an error message
         if transcription_text in ["file transcription error", "invalid api key"]:
@@ -61,12 +62,11 @@ class CountWords:
         """
         Transcribe audio from a file into text.
 
-        :param: None
         :return: Transcription text as str.
         """
         log.debug("Requesting transcription for file: %s", self.file_path)
         # Get transcription using the transcribe_audio module
-        transcription_text = modules.transcribe_audio.TranscribeMP3(self.file_path, self.api_key).on_execute()
+        transcription_text = TranscribeMP3(self.file_path, self.api_key).on_execute()
         if transcription_text in ["file transcription error", "invalid api key"]:
             log.warning("Transcription error: %s", transcription_text)
         else:
@@ -74,7 +74,7 @@ class CountWords:
         return transcription_text
 
     @staticmethod
-    def process_text_to_list(transcription_text: str) -> list:
+    def process_text_to_list(transcription_text: str) -> list[str]:
         """
         Process text: remove punctuation, lowercase, split into words.
 
@@ -96,7 +96,7 @@ class CountWords:
         return words_list
 
     @staticmethod
-    def count_and_sort_words(words_list: list) -> list:
+    def count_and_sort_words(words_list: list[str]) -> list[tuple[str, int]]:
         """
         Count elements in the list and sort them by frequency (descending).
 
@@ -104,12 +104,7 @@ class CountWords:
         :return: List of (word, count) tuples.
         """
         log.debug("Counting and sorting %d words", len(words_list))
-        # Count the number of occurrences of each word in the list
-        counted_words = Counter(words_list)
-
-        # Sort words by the number of occurrences (descending order)
-        counted_words = sorted(counted_words.items(), key=lambda x: x[1], reverse=True)
-        log.debug("Sorted word list with %d unique words", len(counted_words))
-
-        # Return the list of tuples in the format (word, occurrence_count)
-        return counted_words
+        counted = Counter(words_list)
+        sorted_words = sorted(counted.items(), key=lambda x: x[1], reverse=True)
+        log.debug("Sorted word list with %d unique words", len(sorted_words))
+        return sorted_words
