@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import TextIO
 
 import mkdocs_gen_files
 from config import LINKABLE_IMAGE_EXTENSIONS, SOURCE_DIR
@@ -39,7 +40,7 @@ def _parts_from_source(python_file: Path) -> tuple[str, ...]:
     return tuple(python_file.relative_to(SOURCE_DIR).with_suffix("").parts)
 
 
-def _write_backlink_if_needed(fh, parts: list[str]) -> None:
+def _write_backlink_if_needed(fh: TextIO, parts: list[str]) -> None:
     """
     Write a backlink to the parent index if the page is not top-level.
 
@@ -114,7 +115,11 @@ def _collect_static_files(source_folder_fs: Path) -> list[Path]:
     return static_files
 
 
-def _emit_static_files_list(parts: list[str], static_files: list[Path], file_handle) -> None:
+def _emit_static_files_list(
+    parts: list[str],
+    static_files: list[Path],
+    file_handle: TextIO,
+) -> None:
     """
     Emit a section listing static files for a given folder.
 
