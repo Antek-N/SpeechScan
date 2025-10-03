@@ -15,6 +15,7 @@ class DownloadVideoThread(QThread):
 
     finished = pyqtSignal(object)  # A signal emitted when the thread has finished
     failed = pyqtSignal(str)  # A signal emitted when the download fails (returns an error message)
+    _tmpdir: TemporaryDirectory[str] | None
 
     def __init__(self, yt_url: str) -> None:
         """
@@ -25,14 +26,13 @@ class DownloadVideoThread(QThread):
         """
         super().__init__()
         self.yt_url = yt_url
-        self._tmpdir = None  # keep a reference to the temporary directory so it is not deleted too early
+        self._tmpdir = None  # keep a reference to the temporary directory, so it is not deleted too early
         log.debug("DownloadVideoThread initialized with URL: %s", yt_url)
 
     def run(self) -> None:
         """
         Run the thread: download audio and emit finished or failed signal.
 
-        :param: None
         :return: None
         """
         log.info("Starting download thread for URL: %s", self.yt_url)
@@ -51,13 +51,14 @@ class DownloadVideoThread(QThread):
         """
         Download audio using yt-dlp into a temporary directory.
 
-        :param: None
         :return: Full path to the downloaded audio file.
         """
         log.debug("Creating temporary directory for download")
         # create a temporary directory where the audio will be saved
         self._tmpdir = TemporaryDirectory()
-        out_dir = Path(self._tmpdir.name)
+        tmpdir = self._tmpdir
+        assert tmpdir is not None
+        out_dir = Path(tmpdir.name)
         # set the output filename template
         out_tmpl = str(out_dir / "audio.%(ext)s")
 
@@ -76,7 +77,7 @@ class DownloadVideoThread(QThread):
             # download and get metadata
             info = youtube_downloader.extract_info(self.yt_url, download=True)
             log.debug("Metadata retrieved: title=%s", info.get("title"))
-            # prepare the actual filename (with extension)
+            # prepare the actual filename (with the extension)
             file_path = youtube_downloader.prepare_filename(info)
 
         log.debug("Final downloaded file path: %s", file_path)
