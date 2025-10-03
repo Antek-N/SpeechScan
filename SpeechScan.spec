@@ -7,8 +7,8 @@ a = Analysis(
     pathex=['src'],
     binaries=[],
     datas=[
-        Tree('src\\speechscan\\assets', prefix='assets'),
-        Tree('src\\speechscan\\ui\\views', prefix='ui\\views'),
+        ('src\\speechscan\\assets', 'assets'),
+        ('src\\speechscan\\ui\\views', 'ui\\views'),
     ],
     hiddenimports=[],
     hookspath=[],
